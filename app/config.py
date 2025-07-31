@@ -159,3 +159,6 @@ LEFT_RATIO = 0
 TOP_RATIO = 0
 RIGHT_RATIO = 0
 BOTTOM_RATIO = 0 
+
+version = "0.0.1"
+github_repo = "CNLonely/DeepInsightOtakuApp"
