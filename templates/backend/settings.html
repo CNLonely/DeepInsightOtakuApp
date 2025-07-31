@@ -1,0 +1,1378 @@
+{% extends "_base.html" %}
+
+{% block title %}设置 - {{ super() }}{% endblock %}
+
+{% block styles %}
+<style>
+    .settings-container {
+        display: flex;
+        gap: 2rem;
+        width: 100%;
+        max-width: 1200px;
+    }
+
+    .settings-nav {
+        flex: 0 0 240px; /* Do not grow, do not shrink, base width 240px */
+        align-self: flex-start; /* Prevent stretching to full height */
+    }
+
+    .settings-content {
+        flex-grow: 1;
+        min-width: 0; /* Important for flex-grow to work correctly */
+    }
+
+    .nav-pills .nav-link {
+        color: var(--c-text-light);
+        transition: all 0.2s ease-in-out;
+    }
+
+    .nav-pills .nav-link.active, .nav-pills .show>.nav-link {
+        color: var(--primary-color);
+        background-color: color-mix(in srgb, var(--primary-color), transparent 85%);
+        font-weight: 500;
+    }
+
+    .nav-pills .nav-link:not(.active):hover {
+        background-color: var(--c-bg);
+        color: var(--c-text);
+    }
+
+    /* Hide all panes by default */
+    .tab-pane {
+        display: none;
+    }
+    /* Show active pane */
+    .tab-pane.active {
+        display: block;
+        animation: fadeIn .4s ease-out;
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    #bg-image-list {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+        gap: 1rem;
+        background-color: color-mix(in srgb, var(--c-bg), transparent 70%);
+        border: 1px solid color-mix(in srgb, var(--c-border), transparent 80%);
+    }
+    .bg-image-item {
+        position: relative;
+        cursor: pointer;
+        border-radius: .5rem;
+        overflow: hidden;
+        border: 3px solid transparent;
+        transition: border-color .2s;
+    }
+    .bg-image-item.active {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 15px var(--glow-primary);
+    }
+    .bg-image-item img {
+        width: 100%;
+        height: 75px;
+        object-fit: cover;
+        display: block;
+    }
+    .bg-image-item .delete-btn {
+        position: absolute;
+        top: 4px;
+        right: 4px;
+        width: 24px;
+        height: 24px;
+        background-color: rgba(0,0,0,0.6);
+        color: white;
+        border: none;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        opacity: 0;
+        transition: opacity .2s;
+    }
+    .bg-image-item:hover .delete-btn {
+        opacity: 1;
+    }
+
+    #bg-image-list.disabled-selection {
+        pointer-events: none;
+        opacity: 0.6;
+    }
+
+    .form-range::-webkit-slider-runnable-track {
+        background-color: color-mix(in srgb, var(--c-border), #0000 50%);
+    }
+    .form-range::-moz-range-track {
+        background-color: color-mix(in srgb, var(--c-border), #0000 50%);
+    }
+
+    .log-line {
+        padding-bottom: 2px;
+        margin-bottom: 2px;
+        border-bottom: 1px solid #444; /* Slightly dimmer */
+    }
+    .log-line:last-of-type {
+        border-bottom: none;
+    }
+
+    #log-container {
+        background-color: rgba(20, 20, 22, 0.85) !important;
+        backdrop-filter: blur(5px);
+        font-size: 0.8rem !important; /* Smaller font size */
+        font-weight: 500;
+        color: #6eff6e;
+    }
+
+    /* Override for transparent list items in device info */
+    #v-pills-device .list-group-item {
+        background-color: transparent;
+        border-color: rgba(255, 255, 255, 0.15); /* A very faint line */
+    }
+
+        /* Citation Table Styles */
+        .citation-table {
+        width: 100%;
+        background-color: #fff;
+        border-radius: .5rem;
+        overflow: hidden;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        color: #212529;
+        border-collapse: collapse; /* Use collapse for cleaner lines */
+        border: 1px solid #dee2e6;
+    }
+    .citation-table thead {
+        background-color: #f8f9fa;
+    }
+    .citation-table th {
+        padding: 1rem;
+        text-align: left;
+        font-weight: 600;
+        color: #495057;
+        border-bottom: 2px solid #dee2e6;
+    }
+    .citation-table td {
+        padding: 1rem;
+        vertical-align: top;
+        border-top: 1px solid #e9ecef;
+    }
+    .citation-table tbody tr.citation-data-row:hover {
+        background-color: #f1f3f5;
+    }
+    .citation-table .project-title {
+        font-weight: 600;
+        color: #343a40;
+    }
+    .citation-table .project-version {
+        font-size: 0.85em;
+        color: #6c757d;
+    }
+    .citation-table .project-description {
+        font-size: 0.9em;
+        color: #495057;
+    }
+    .citation-table .project-authors a {
+        color: var(--primary-color);
+        text-decoration: none;
+    }
+    .citation-table .project-authors a:hover {
+        text-decoration: underline;
+    }
+    .citation-table .license-badge {
+        display: inline-block;
+        padding: .25em .6em;
+        font-size: .8em;
+        font-weight: 700;
+        line-height: 1;
+        text-align: center;
+        white-space: nowrap;
+        vertical-align: baseline;
+        border-radius: .375rem;
+        background-color: #e9ecef;
+        color: #495057;
+    }
+    .citation-table .project-links a {
+        margin-right: 1rem;
+        color: var(--primary-color);
+        text-decoration: none;
+        font-weight: 500;
+        cursor: pointer;
+    }
+    .citation-table .project-links a:hover {
+        text-decoration: underline;
+    }
+    .bibtex-row {
+        background-color: #f8f9fa !important;
+    }
+    .bibtex-row pre {
+        background-color: #e9ecef;
+        border: 1px solid #dee2e6;
+        color: #212529;
+        white-space: pre-wrap;
+        word-break: break-all;
+        margin: 0;
+    }
+
+
+</style>
+{% endblock %}
+
+{% block content %}
+<main class="d-flex flex-column align-items-center flex-grow-1 w-100 px-3 pt-4 pb-4">
+    <div class="settings-container">
+        <!-- Left Sidebar Navigation -->
+        <div class="settings-nav frosted-glass-card p-4">
+             <h2 class="h5 mb-3">管理中心</h2>
+            <div class="nav flex-column nav-pills me-3" id="v-pills-tab" role="tablist" aria-orientation="vertical">
+                <button class="nav-link text-start active" id="v-pills-project-tab" data-bs-toggle="pill" data-bs-target="#v-pills-project" type="button" role="tab" aria-controls="v-pills-project" aria-selected="true">
+                    <i class="bi bi-kanban-fill me-2"></i> 项目设置
+                </button>
+                <button class="nav-link text-start" id="v-pills-recognition-tab" data-bs-toggle="pill" data-bs-target="#v-pills-recognition" type="button" role="tab" aria-controls="v-pills-recognition" aria-selected="false">
+                    <i class="bi bi-search me-2"></i> 识别设置
+                </button>
+                <button class="nav-link text-start" id="v-pills-background-tab" data-bs-toggle="pill" data-bs-target="#v-pills-background" type="button" role="tab" aria-controls="v-pills-background" aria-selected="false">
+                    <i class="bi bi-image-fill me-2"></i> 背景设置
+                </button>
+                <button class="nav-link text-start" id="v-pills-model-hub-tab" data-bs-toggle="pill" data-bs-target="#v-pills-model-hub" type="button" role="tab" aria-controls="v-pills-model-hub" aria-selected="false">
+                    <i class="bi bi-hdd-stack-fill me-2"></i> 模型中心
+                </button>
+                <button class="nav-link text-start" id="v-pills-account-tab" data-bs-toggle="pill" data-bs-target="#v-pills-account" type="button" role="tab" aria-controls="v-pills-account" aria-selected="false">
+                    <i class="bi bi-person-fill-gear me-2"></i> 账户管理
+                </button>
+                <button class="nav-link text-start" id="v-pills-logs-tab" data-bs-toggle="pill" data-bs-target="#v-pills-logs" type="button" role="tab" aria-controls="v-pills-logs" aria-selected="false">
+                    <i class="bi bi-file-earmark-text-fill me-2"></i> 日志查看
+                </button>
+                <button class="nav-link text-start" id="v-pills-device-tab" data-bs-toggle="pill" data-bs-target="#v-pills-device" type="button" role="tab" aria-controls="v-pills-device" aria-selected="false">
+                    <i class="bi bi-motherboard-fill me-2"></i> 设备检测
+                </button>
+                <button class="nav-link text-start" id="v-pills-about-tab" data-bs-toggle="pill" data-bs-target="#v-pills-about" type="button" role="tab" aria-controls="v-pills-about" aria-selected="false">
+                    <i class="bi bi-award-fill me-2"></i>  项目引用
+                </button>
+            </div>
+        </div>
+
+        <!-- Right Content Area -->
+        <div class="settings-content">
+             <div class="tab-content" id="v-pills-tabContent">
+                <!-- Project Settings Pane -->
+                <div class="tab-pane fade show active" id="v-pills-project" role="tabpanel" aria-labelledby="v-pills-project-tab">
+                    <div class="frosted-glass-card p-4">
+                        <h3 class="mb-4">项目设置</h3>
+                        <div class="mb-4">
+                            <label for="projectName" class="form-label">项目名称</label>
+                            <input type="text" class="form-control" id="projectName" name="project_name" placeholder="例如：我的动漫角色识别器" required>
+                            <div class="form-text">此名称将显示在网站的导航栏上。更改后将自动保存并刷新页面。</div>
+                        </div>
+                        <div class="mb-4">
+                            <label for="glassOpacitySlider" class="form-label">UI透明度: <span id="glassOpacityValue" class="fw-bold">{{ (config.glass_opacity * 100) | round | int }}%</span></label>
+                            <input type="range" class="form-range" min="0.1" max="1.0" step="0.05" id="glassOpacitySlider" value="{{ config.glass_opacity }}">
+                            <div class="form-text">调整主要UI元素的背景不透明度。</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recognition Settings Pane -->
+                <div class="tab-pane fade" id="v-pills-recognition" role="tabpanel" aria-labelledby="v-pills-recognition-tab">
+                    <div class="frosted-glass-card p-4">
+                        <h3 class="mb-4">识别设置</h3>
+                        <div class="mb-4">
+                            <label for="recognition-threshold-slider" class="form-label d-flex justify-content-between">
+                                <span>识别阈值 (Recognition Threshold)</span>
+                                <span id="recognition-threshold-value" class="badge bg-secondary rounded-pill">{{ config.recognition_threshold }}</span>
+                            </label>
+                            <input type="range" class="form-range" id="recognition-threshold-slider" min="0.1" max="1.0" step="0.01" value="{{ config.recognition_threshold }}">
+                            <small class="form-text text-muted">只有当识别结果的置信度高于此阈值时，才会被认为是有效结果。</small>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="max-faces-slider" class="form-label d-flex justify-content-between">
+                                <span>最大识别数量 (Max Faces)</span>
+                                <span id="max-faces-value" class="badge bg-secondary rounded-pill">{{ config.max_faces }}</span>
+                            </label>
+                            <input type="range" class="form-range" id="max-faces-slider" min="1" max="50" step="1" value="{{ config.max_faces }}">
+                            <small class="form-text text-muted">单张图片中允许检测的最大人脸数量。若超出此限制，将不会进行识别。</small>
+                        </div>
+
+                        <div class="mb-4">
+                           <div class="form-check form-switch">
+                               <input class="form-check-input" type="checkbox" role="switch" id="enableUploadCompression" name="enable_upload_compression">
+                               <label class="form-check-label" for="enableUploadCompression">启用上传图片压缩</label>
+                           </div>
+                           <div class="form-text">
+                               开启后，在上传识别前会自动将图片缩放并压缩。这可以大幅减少上传时间，但会略微降低图片质量。
+                               关闭此选项以上传原始文件。
+                           </div>
+                       </div>
+
+                         <div class="mb-4">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" role="switch" id="useRecognitionCorrection" name="use_recognition_correction">
+                                <label class="form-check-label" for="useRecognitionCorrection">启用全局识别修正算法</label>
+                            </div>
+                            <div class="form-text">
+                                启用后，系统会综合分析图片中的所有识别结果，通过投票选出最主要的动漫作品，并以此为依据修正可能的错误识别。
+                                这有助于提高多人场景下的准确率，但可能会修正一些本是正确的冷门角色。
+                            </div>
+                        </div>
+
+                        <!-- 修正豁免阈值 -->
+                        <div class="mb-4" id="correction-override-threshold-group">
+                            <label for="correction-override-threshold-slider" class="form-label d-flex justify-content-between">
+                                <span>修正豁免阈值 (Correction Override Threshold)</span>
+                                <span id="correction-override-threshold-value" class="badge bg-secondary rounded-pill">{{ config.correction_override_threshold }}</span>
+                            </label>
+                            <input type="range" class="form-range" id="correction-override-threshold-slider" min="0.1" max="1.0" step="0.01" value="{{ config.correction_override_threshold }}">
+                            <small class="form-text text-muted">当单个识别结果的置信度高于此阈值时，将<strong>不会</strong>被全局修正逻辑覆盖。建议设为较高值（如0.85）。</small>
+                        </div>
+                        
+                        <hr class="my-4">
+
+                        <div class="mb-4">
+                            <label for="animation-speed-random-slider" class="form-label d-flex justify-content-between">
+                                <span>随机扫描动画速度 (毫秒)</span>
+                                <span id="animation-speed-random-value" class="badge bg-secondary rounded-pill">{{ config.animation_speed_random }} ms</span>
+                            </label>
+                            <input type="range" class="form-range" id="animation-speed-random-slider" min="100" max="2000" step="50" value="{{ config.animation_speed_random }}">
+                            <small class="form-text text-muted">调整识别开始时，随机扫描动画的切换速度。值越小越快。</small>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="animation-speed-target-slider" class="form-label d-flex justify-content-between">
+                                <span>锁定目标扫描速度 (毫秒)</span>
+                                <span id="animation-speed-target-value" class="badge bg-secondary rounded-pill">{{ config.animation_speed_target }} ms</span>
+                            </label>
+                            <input type="range" class="form-range" id="animation-speed-target-slider" min="200" max="3000" step="50" value="{{ config.animation_speed_target }}">
+                            <small class="form-text text-muted">调整检测到人脸后，在人脸之间切换扫描的速度。值越小越快。</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Background Settings Pane -->
+                <div class="tab-pane fade" id="v-pills-background" role="tabpanel" aria-labelledby="v-pills-background-tab">
+                    <div class="frosted-glass-card p-4">
+                        <h3 class="mb-4">背景设置</h3>
+                        <form id="backgroundSettingsForm">
+                            <!-- Background Type -->
+                            <div class="mb-4">
+                                <label class="form-label">背景类型</label>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="background_type" id="bg-type-image" value="image" checked>
+                                    <label class="form-check-label" for="bg-type-image">图片</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="background_type" id="bg-type-color" value="color">
+                                    <label class="form-check-label" for="bg-type-color">纯色</label>
+                                </div>
+                            </div>
+
+                            <!-- Color Settings -->
+                            <div id="color-settings-group" class="mb-4 d-none">
+                                <label for="backgroundColor" class="form-label">背景颜色</label>
+                                <input type="color" class="form-control form-control-color" id="backgroundColor" name="background_color" title="选择一个颜色">
+                            </div>
+
+                            <!-- Image Settings -->
+                            <div id="image-settings-group" class="mb-4">
+                                <div class="mb-3">
+                                    <label for="bgUpload" class="form-label">上传新背景 (可多选)</label>
+                                    <div class="input-group">
+                                        <input class="form-control" type="file" id="bgUpload" accept="image/png, image/jpeg, image/webp" multiple>
+                                        <button class="btn btn-outline-secondary" type="button" id="bgUploadBtn">
+                                            <i class="bi bi-upload me-1"></i>上传
+                                        </button>
+                                    </div>
+                                    <div class="form-text">上传的图片将自动存入背景库。</div>
+                                </div>
+                                
+                                <div class="mb-4">
+                                     <label class="form-label">图片显示模式</label>
+                                    <select class="form-select" id="bgMode" name="background_mode">
+                                        <option value="fixed">固定显示一张</option>
+                                        <option value="random">每次随机显示</option>
+                                        <option value="sequential">按顺序循环显示</option>
+                                    </select>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label">背景库 (点击图片以选择)</label>
+                                    <div id="bg-image-list" class="p-2 rounded">
+                                        <!-- Images will be loaded here by JS -->
+                                        <div id="bg-list-placeholder" class="text-center p-4 text-muted">
+                                            <div class="spinner-border spinner-border-sm" role="status">
+                                                <span class="visually-hidden">Loading...</span>
+                                            </div>
+                                            <span class="ms-2">加载中...</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Model Hub Pane -->
+                <div class="tab-pane fade" id="v-pills-model-hub" role="tabpanel" aria-labelledby="v-pills-model-hub-tab">
+                     <div class="frosted-glass-card p-4">
+                        <h3 class="mb-4">模型中心</h3>
+                        <p class="card-text text-muted">
+                            这里显示系统当前加载的核心模型文件路径。这些路径在 `app/config.py` 中定义。
+                        </p>
+                        <div class="mb-4">
+                             <div class="form-check form-switch mb-3">
+                                <input class="form-check-input" type="checkbox" role="switch" id="recognitionBackendSwitch">
+                                <label class="form-check-label" for="recognitionBackendSwitch">
+                                    使用 ONNX Runtime 后端 (实验性)
+                                </label>
+                            </div>
+                             <div class="form-text">
+                                开启此选项将使用性能更高、更适合部署的 ONNX 模型进行推理。关闭则使用原生的 PyTorch 模型。<br>
+                                <strong>切换后需要重启应用才能生效。</strong>
+                                <span id="onnx-status" class="fw-bold"></span>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h5><i class="bi bi-stack me-2 text-info"></i>PyTorch 模型</h5>
+                                <ul class="list-group list-group-flush">
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <strong class="small">YOLOv8 检测器</strong>
+                                        </div>
+                                        <span class="badge bg-secondary rounded-pill font-monospace p-2">{{ config.YOLO_MODEL_PATH }}</span>
+                                    </li>
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <strong class="small">ArcFace 识别器</strong>
+                                        </div>
+                                        <span class="badge bg-secondary rounded-pill font-monospace p-2">{{ config.RECOGNITION_MODEL_PATH }}</span>
+                                    </li>
+                                </ul>
+                            </div>
+                             <div class="col-md-6">
+                                <h5><i class="bi bi-speedometer2 me-2 text-success"></i>ONNX 模型</h5>
+                                <ul class="list-group list-group-flush">
+                                     <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        <div>
+                                             <strong class="small">YOLOv8 检测器</strong>
+                                        </div>
+                                        <span class="badge bg-secondary rounded-pill font-monospace p-2">{{ config.ONNX_YOLO_MODEL_PATH }}</span>
+                                    </li>
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <strong class="small">ArcFace 识别器</strong>
+                                        </div>
+                                        <span class="badge bg-secondary rounded-pill font-monospace p-2">{{ config.ONNX_MODEL_PATH }}</span>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <hr class="my-4">
+
+                        <h5><i class="bi bi-files me-2 text-primary"></i>数据与元文件</h5>
+                        <ul class="list-group list-group-flush">
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <div>
+                                    <i class="bi bi-fingerprint me-2"></i>
+                                    <strong>特征库 (Feature DB)</strong>
+                                </div>
+                                <span class="badge bg-secondary rounded-pill font-monospace p-2">{{ config.FEATURE_DB_PATH }}</span>
+                            </li>
+                             <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <div>
+                                    <i class="bi bi-card-list me-2"></i>
+                                    <strong>类别映射表 (Class Map)</strong>
+                                </div>
+                                <span class="badge bg-secondary rounded-pill font-monospace p-2">{{ config.CLASS_MAP_PATH }}</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Account Management Pane -->
+                <div class="tab-pane fade" id="v-pills-account" role="tabpanel" aria-labelledby="v-pills-account-tab">
+                     <div class="frosted-glass-card p-4">
+                        <h3 class="mb-4">账户管理</h3>
+                        <p class="card-text text-muted">在这里创建或删除用户。新创建的用户默认密码为 `123456`，首次登录时系统会强制其修改。</p>
+                        
+                        <div class="my-4">
+                            <label for="new-username" class="form-label fw-bold">添加新用户</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="new-username" placeholder="输入新用户名">
+                                <button class="btn btn-primary" type="button" id="add-user-btn">
+                                    <i class="bi bi-plus-lg"></i> 创建
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="form-label fw-bold">现有用户</label>
+                            <ul class="list-group" id="user-list">
+                                <!-- User list will be populated by JavaScript -->
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Log Viewer Pane -->
+                <div class="tab-pane fade" id="v-pills-logs" role="tabpanel" aria-labelledby="v-pills-logs-tab">
+                     <div class="frosted-glass-card p-4 h-100">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h3 class="mb-0">实时日志</h3>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" role="switch" id="log-stream-toggle" checked>
+                                <label class="form-check-label" for="log-stream-toggle">自动刷新</label>
+                            </div>
+                        </div>
+                        <div id="log-container" class="px-3 pt-2 pb-3 rounded font-monospace" style="height: 600px; overflow-y: auto; white-space: pre-wrap; word-break: break-all; line-height: 1.3;">
+                            <div class="text-center log-status-message" style="padding-top: 40px; padding-bottom: 40px;">
+                                <div class="spinner-border spinner-border-sm" role="status"></div>
+                                <span class="ms-2">正在加载历史日志...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Device Info Pane -->
+                <div class="tab-pane fade" id="v-pills-device" role="tabpanel" aria-labelledby="v-pills-device-tab">
+                     <div class="frosted-glass-card p-4">
+                        <h3 class="mb-4">设备与环境信息</h3>
+                        <div id="system-info-container">
+                            <!-- JS will populate this -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- About Pane -->
+                <div class="tab-pane fade" id="v-pills-about" role="tabpanel" aria-labelledby="v-pills-about-tab">
+                    <div class="frosted-glass-card p-4">
+                        <h3 class="mb-4">致谢与引用</h3>
+                        <p class="text-muted">本项目的开发离不开以下优秀的开源项目和研究成果。我们对这些项目的作者和贡献者表示衷心的感谢。</p>
+
+                        <div class="table-responsive mt-4">
+                            <table class="citation-table">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 20%;">Project</th>
+                                        <th style="width: 45%;">Description</th>
+                                        <th style="width: 15%;">License</th>
+                                        <th style="width: 20%;">Links</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- YOLOv8 Row -->
+                                    <tr class="citation-data-row" data-bibtex-id="yolov8">
+                                        <td>
+                                            <div class="project-title"></div>
+                                            <div class="project-version"></div>
+                                        </td>
+                                        <td>
+                                            <p class="project-description">一个领先的、SOTA的目标检测模型，以其卓越的速度和准确性而闻名。</p>
+                                            <div class="project-authors small text-muted"></div>
+                                        </td>
+                                        <td><span class="license-badge"></span></td>
+                                        <td class="project-links">
+                                            <code class="d-none">@software{yolov8_ultralytics,
+                                                              author = {Glenn Jocher and Ayush Chaurasia and Jing Qiu},
+                                                              title = {Ultralytics YOLOv8},
+                                                              version = {8.0.0},
+                                                              year = {2023},
+                                                              url = {https://github.com/ultralytics/ultralytics},
+                                                              orcid = {0000-0001-5950-6979, 0000-0002-7603-6750, 0000-0003-3783-7069},
+                                                              license = {AGPL-3.0}
+                                                            }</code>
+                                        </td>
+                                    </tr>
+                                    <tr class="bibtex-row collapse" id="bibtex-collapse-yolov8">
+                                        <td colspan="4">
+                                            <pre class="p-3 rounded font-monospace"></pre>
+                                        </td>
+                                    </tr>
+                                    <!-- ResNet Row -->
+                                    <tr class="citation-data-row" data-bibtex-id="resnet">
+                                        <td>
+                                            <div class="project-title"></div>
+                                            <div class="project-version"></div>
+                                        </td>
+                                        <td>
+                                            <p class="project-description">一个革命性的深度卷积神经网络架构，它通过引入残差连接解决了深度网络中的梯度消失和性能退化问题。</p>
+                                            <div class="project-authors small text-muted"></div>
+                                        </td>
+                                        <td><span class="license-badge"></span></td>
+                                        <td class="project-links">
+                                            <code class="d-none">@article{He2015,
+                                                              author = {Kaiming He and Xiangyu Zhang and Shaoqing Ren and Jian Sun},
+                                                              title = {Deep Residual Learning for Image Recognition},
+                                                              journal = {arXiv preprint arXiv:1512.03385},
+                                                              year = {2015},
+                                                              url = {https://github.com/KaimingHe/deep-residual-networks},
+                                                              license = {MIT}
+                                                            }</code>
+                                        </td>
+                                    </tr>
+                                     <tr class="bibtex-row collapse" id="bibtex-collapse-resnet">
+                                        <td colspan="4">
+                                            <pre class="p-3 rounded font-monospace"></pre>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</main>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // The global showToast function is now available from toast.js
+
+    // --- Generic Save Function ---
+    function saveSettings(settingsData, successMessage, isProjectName = false) {
+        fetch('/api/admin/settings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(settingsData),
+        })
+        .then(response => response.json().then(result => ({ ok: response.ok, result })))
+        .then(({ ok, result }) => {
+            if (ok) {
+                showToast(successMessage, 'success', 2000);
+                if (isProjectName) {
+                    showToast('项目名称已更新，页面即将刷新。', 'info', 2000);
+                    setTimeout(() => location.reload(), 2000);
+                }
+            } else {
+                throw new Error(result.message || '保存失败');
+            }
+        })
+        .catch(error => {
+            showToast(`错误: ${error.message}`, 'danger');
+        });
+    }
+
+    // --- Project Settings ---
+    $('#projectName').on('blur', function() {
+        const currentName = '{{ config.project_name | e }}';
+        if ($(this).val() !== currentName && $(this).val().trim() !== '') {
+            saveSettings({ project_name: $(this).val() }, '项目名称已保存', true);
+        }
+    });
+
+    // --- Recognition Settings ---
+    const recognitionThresholdSlider = document.getElementById('recognition-threshold-slider');
+    const recognitionThresholdValue = document.getElementById('recognition-threshold-value');
+    recognitionThresholdSlider.addEventListener('input', (event) => {
+        recognitionThresholdValue.textContent = event.target.value;
+    });
+    recognitionThresholdSlider.addEventListener('change', (event) => {
+        saveSettings({ 'recognition_threshold': parseFloat(event.target.value) }, '识别阈值已保存');
+    });
+
+    const maxFacesSlider = document.getElementById('max-faces-slider');
+    const maxFacesValue = document.getElementById('max-faces-value');
+    maxFacesSlider.addEventListener('input', (event) => {
+        maxFacesValue.textContent = event.target.value;
+    });
+    maxFacesSlider.addEventListener('change', (event) => {
+        saveSettings({ 'max_faces': parseInt(event.target.value) }, '最大识别数量已保存');
+    });
+
+    const compressionSwitch = document.getElementById('enableUploadCompression');
+    compressionSwitch.addEventListener('change', () => {
+        saveSettings({ 'enable_upload_compression': compressionSwitch.checked }, '上传压缩设置已保存');
+    });
+
+    const correctionSwitch = document.getElementById('useRecognitionCorrection');
+    const overrideGroup = document.getElementById('correction-override-threshold-group');
+    const correctionOverrideThresholdSlider = document.getElementById('correction-override-threshold-slider');
+    const correctionOverrideThresholdValue = document.getElementById('correction-override-threshold-value');
+
+    function toggleCorrectionThreshold() {
+        overrideGroup.style.display = correctionSwitch.checked ? 'block' : 'none';
+    }
+
+    correctionSwitch.addEventListener('change', () => {
+        toggleCorrectionThreshold();
+        saveSettings({ 'use_recognition_correction': correctionSwitch.checked }, '修正算法设置已保存');
+    });
+
+    correctionOverrideThresholdSlider.addEventListener('input', (event) => {
+        correctionOverrideThresholdValue.textContent = event.target.value;
+    });
+    correctionOverrideThresholdSlider.addEventListener('change', (event) => {
+        saveSettings({ 'correction_override_threshold': parseFloat(event.target.value) }, '修正豁免阈值已保存');
+    });
+
+    const animationSpeedRandomSlider = document.getElementById('animation-speed-random-slider');
+    const animationSpeedRandomValue = document.getElementById('animation-speed-random-value');
+    animationSpeedRandomSlider.addEventListener('input', (event) => {
+        animationSpeedRandomValue.textContent = `${event.target.value} ms`;
+    });
+    animationSpeedRandomSlider.addEventListener('change', (event) => {
+        saveSettings({ 'animation_speed_random': parseInt(event.target.value) }, '随机扫描速度已保存');
+    });
+
+    const animationSpeedTargetSlider = document.getElementById('animation-speed-target-slider');
+    const animationSpeedTargetValue = document.getElementById('animation-speed-target-value');
+    animationSpeedTargetSlider.addEventListener('input', (event) => {
+        animationSpeedTargetValue.textContent = `${event.target.value} ms`;
+    });
+    animationSpeedTargetSlider.addEventListener('change', (event) => {
+        saveSettings({ 'animation_speed_target': parseInt(event.target.value) }, '锁定目标扫描速度已保存');
+    });
+
+
+    // --- Recognition Backend Switch ---
+    const backendSwitch = document.getElementById('recognitionBackendSwitch');
+
+    backendSwitch.addEventListener('change', function() {
+        const backend = this.checked ? 'onnx' : 'pytorch';
+        saveSettings({ 'recognition_backend': backend }, '识别后端设置已保存，重启后生效');
+    });
+
+
+    // --- Load initial settings ---
+    function loadSettings() {
+        const thresholdInput = $('#recognitionThreshold');
+        const maxFacesInput = $('#maxFaces');
+        
+        const initialThreshold = '{{ config.recognition_threshold }}';
+        const initialMaxFaces = '{{ config.max_faces }}';
+        
+        thresholdInput.val(initialThreshold);
+        $('#recognitionThresholdValue').text(initialThreshold);
+
+        maxFacesInput.val(initialMaxFaces);
+        $('#maxFacesValue').text(initialMaxFaces);
+        
+        $('#projectName').val('{{ config.project_name | e }}');
+        
+        // 使用 JSON.parse 来安全地处理 Jinja 模板变量，避免 linter 错误
+        const enableCompression = JSON.parse('{{ config.get("enable_upload_compression", True) | tojson | safe }}');
+        $('#enableUploadCompression').prop('checked', enableCompression);
+        
+        const useCorrection = JSON.parse('{{ config.use_recognition_correction | tojson | safe }}');
+        $('#useRecognitionCorrection').prop('checked', useCorrection);
+        toggleCorrectionThreshold(); // 新增：页面加载时初始化可见性
+
+        const backend = '{{ config.recognition_backend }}';
+        backendSwitch.checked = (backend === 'onnx');
+        
+        // 检查模型文件状态
+        fetch('/api/admin/model_file_status')
+            .then(response => response.json())
+            .then(status => {
+                const statusEl = $('#onnx-status');
+                if (status.onnx_exists) {
+                    statusEl.text('ONNX模型文件存在。').addClass('text-success').removeClass('text-danger text-warning');
+                    backendSwitch.disabled = false;
+                } else {
+                    statusEl.text('ONNX模型文件不存在，请先运行转换脚本。').addClass('text-danger').removeClass('text-success text-warning');
+                    backendSwitch.disabled = true;
+                    // 如果ONNX文件不存在，则强制切换回Pytorch并保存
+                    if (backendSwitch.checked) {
+                        backendSwitch.checked = false;
+                        saveSettings({ 'recognition_backend': 'pytorch' }, 'ONNX模型不存在，已自动切换回PyTorch后端。', false);
+                    }
+                }
+            })
+            .catch(() => {
+                $('#onnx-status').text('无法获取模型文件状态。').addClass('text-warning').removeClass('text-success text-danger');
+                backendSwitch.disabled = true;
+            });
+    }
+    
+    // --- Update slider value display on input ---
+    $('#recognitionThreshold').on('input', function() {
+        $('#recognitionThresholdValue').text($(this).val());
+    });
+    $('#maxFaces').on('input', function() {
+        $('#maxFacesValue').text($(this).val());
+    });
+
+
+    // --- Background Settings Logic ---
+    // 使用 JSON.parse 并添加 'safe' 过滤器来修复此处的语法错误
+    const bgConfig = JSON.parse('{{ config.background | tojson | safe }}');
+
+    function gatherAndSaveBgSettings() {
+        const activeImageItem = $('#bg-image-list .bg-image-item.active');
+        const mode = $('#bgMode').val();
+
+        // 仅在固定模式下，我们才需要关心当前选中的是哪张图片。
+        // 其他模式下，我们保留之前为固定模式保存的图片路径，以便用户切回。
+        let imageToSave = bgConfig.image;
+        if (mode === 'fixed' && activeImageItem.length > 0) {
+            imageToSave = activeImageItem.data('path');
+        }
+
+        const data = {
+            background: {
+                type: $('input[name="background_type"]:checked').val(),
+                color: $('#backgroundColor').val(),
+                mode: mode,
+                image: imageToSave
+            }
+        };
+
+        // --- Update background in real-time ---
+        const newSettings = data.background;
+        const bodyStyle = document.body.style;
+
+        // Update JS-side config object for consistency
+        Object.assign(bgConfig, newSettings);
+
+        if (newSettings.type === 'color') {
+            bodyStyle.backgroundImage = 'none';
+            bodyStyle.backgroundColor = newSettings.color;
+        } else {
+            let imageUrlToApply = '';
+            if (newSettings.mode === 'fixed') {
+                imageUrlToApply = newSettings.image;
+            } else { // For random or sequential, just pick a random one for instant preview
+                const allImageItems = $('#bg-image-list .bg-image-item');
+                if (allImageItems.length > 0) {
+                    const randomIndex = Math.floor(Math.random() * allImageItems.length);
+                    imageUrlToApply = $(allImageItems[randomIndex]).data('path');
+                } else {
+                    // Fallback to the default if no images exist
+                    imageUrlToApply = 'static/backgrounds/default.png';
+                }
+            }
+            if (imageUrlToApply) {
+                bodyStyle.backgroundColor = 'transparent';
+                bodyStyle.backgroundImage = `url('/${imageUrlToApply}')`;
+            }
+        }
+        
+        saveSettings(data, '背景设置已保存');
+    }
+
+    function updateImageSelectionState() {
+        const mode = $('#bgMode').val();
+        const listContainer = $('#bg-image-list');
+
+        if (mode === 'fixed') {
+            listContainer.removeClass('disabled-selection');
+            // Ensure an image is selected if none is
+            if (listContainer.find('.bg-image-item.active').length === 0) {
+                const imageToSelect = bgConfig.image || listContainer.find('.bg-image-item:first').data('path');
+                if (imageToSelect) {
+                    $(`.bg-image-item[data-path="${imageToSelect}"]`).addClass('active');
+                }
+            }
+        } else {
+            listContainer.addClass('disabled-selection');
+            listContainer.find('.bg-image-item').removeClass('active');
+        }
+    }
+
+
+    function loadBackgroundSettings() {
+        // Set type radio, but don't trigger change event on load
+        const bgType = bgConfig.type || 'image';
+        $(`input[name="background_type"][value="${bgType}"]`).prop('checked', true);
+        if (bgType === 'image') {
+            $('#image-settings-group').removeClass('d-none');
+            $('#color-settings-group').addClass('d-none');
+        } else {
+            $('#image-settings-group').addClass('d-none');
+            $('#color-settings-group').removeClass('d-none');
+        }
+
+        // Set color
+        $('#backgroundColor').val(bgConfig.color || '#f0f2f5');
+
+        // Set mode
+        $('#bgMode').val(bgConfig.mode || 'fixed');
+
+        // Load images, which will then trigger the UI update
+        loadBackgroundImages();
+    }
+
+    // Toggle color/image sections
+    $('input[name="background_type"]').on('change', gatherAndSaveBgSettings);
+
+    // Load and display background images
+    function loadBackgroundImages() {
+        const listContainer = $('#bg-image-list');
+        listContainer.find('.bg-image-item').remove(); // Clear existing
+        $('#bg-list-placeholder').removeClass('d-none');
+        
+        fetch('/api/admin/backgrounds')
+            .then(res => res.json())
+            .then(images => {
+                $('#bg-list-placeholder').addClass('d-none');
+                if (images.length === 0) {
+                     $('#bg-list-placeholder').text('背景库为空，请上传图片。').removeClass('d-none');
+                }
+                images.forEach(imgPath => {
+                    const item = $(`
+                        <div class="bg-image-item" data-path="${imgPath}">
+                            <img src="/${imgPath}?t=${new Date().getTime()}" alt="background thumbnail">
+                            <button class="delete-btn" title="删除图片"><i class="bi bi-trash3-fill"></i></button>
+                        </div>
+                    `);
+                    listContainer.append(item);
+                });
+                // Set initial active state based on config, but don't save
+                if (bgConfig.image && images.includes(bgConfig.image)) {
+                    $(`.bg-image-item[data-path="${bgConfig.image}"]`).addClass('active');
+                }
+                // Finally, update the UI for selection (enabled/disabled)
+                updateImageSelectionState();
+            })
+            .catch(err => {
+                 $('#bg-list-placeholder').text('加载背景图片失败。').removeClass('d-none');
+                 showToast('加载背景列表失败', 'danger');
+            });
+    }
+
+    // Select active image and save
+    $('#bg-image-list').on('click', '.bg-image-item', function() {
+        if ($('#bgMode').val() !== 'fixed') return; // Gatekeeper
+        if ($(this).hasClass('active')) return;
+        $('#bg-image-list .bg-image-item').removeClass('active');
+        $(this).addClass('active');
+        gatherAndSaveBgSettings();
+    });
+
+    // Add specific change listeners
+    $('#backgroundColor').on('change', gatherAndSaveBgSettings);
+    $('#bgMode').on('change', function() {
+        updateImageSelectionState();
+        gatherAndSaveBgSettings();
+    });
+
+    // Delete image
+    $('#bg-image-list').on('click', '.delete-btn', function(e) {
+        e.stopPropagation(); // Prevent selecting the image when clicking delete
+        const item = $(this).closest('.bg-image-item');
+        const pathToDelete = item.data('path');
+        
+        if (!confirm(`确定要删除背景图片 "${pathToDelete}" 吗？此操作不可撤销。`)) return;
+
+        fetch('/api/admin/backgrounds', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ filepath: pathToDelete })
+        })
+        .then(res => res.json().then(data => ({ok: res.ok, data})))
+        .then(({ok, data}) => {
+            if (ok) {
+                showToast('图片删除成功', 'success');
+                const wasActive = item.hasClass('active');
+                item.remove();
+                if ($('#bg-image-list .bg-image-item').length === 0) {
+                     $('#bg-list-placeholder').text('背景库为空，请上传图片。').removeClass('d-none');
+                }
+                // If the deleted image was the active one, re-save settings
+                if(wasActive){
+                    gatherAndSaveBgSettings();
+                }
+            } else {
+                throw new Error(data.message || '删除失败');
+            }
+        })
+        .catch(err => showToast(`删除失败: ${err.message}`, 'danger'));
+    });
+
+    // Upload image
+    $('#bgUploadBtn').on('click', function() {
+        const fileInput = $('#bgUpload')[0];
+        const files = fileInput.files;
+
+        if (files.length === 0) {
+            showToast('请先选择一个或多个文件', 'warning');
+            return;
+        }
+
+        const btn = $(this);
+        btn.prop('disabled', true).html(`<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> 上传中 (${files.length})`);
+
+        const uploadPromises = Array.from(files).map(file => {
+            const formData = new FormData();
+            formData.append('file', file);
+            return fetch('/api/admin/backgrounds/upload', {
+                method: 'POST',
+                body: formData
+            }).then(res => {
+                if (!res.ok) {
+                    return res.json().then(err => Promise.reject(new Error(err.message || `文件 ${file.name} 上传失败`)));
+                }
+                return res.json();
+            });
+        });
+
+        Promise.all(uploadPromises)
+            .then(results => {
+                showToast(`成功上传 ${results.length} 张图片!`, 'success');
+                loadBackgroundImages(); // Refresh list once after all uploads are done
+                $('#bgUpload').val(''); // Clear file input
+            })
+            .catch(err => {
+                showToast(`上传出错: ${err.message}`, 'danger');
+            })
+            .finally(() => {
+                btn.prop('disabled', false).html('<i class="bi bi-upload me-1"></i>上传');
+            });
+    });
+
+    // Glass Opacity Slider Logic
+    const glassOpacitySlider = document.getElementById('glassOpacitySlider');
+    const glassOpacityValue = document.getElementById('glassOpacityValue');
+    
+    function applyOpacitySetting() {
+        const value = glassOpacitySlider.value;
+        document.documentElement.style.setProperty('--glass-bg-opacity', value);
+        glassOpacityValue.textContent = `${Math.round(value * 100)}%`;
+    }
+    
+    // Listen for slider changes
+    glassOpacitySlider.addEventListener('input', applyOpacitySetting);
+    glassOpacitySlider.addEventListener('change', () => {
+        saveSettings({ "glass_opacity": parseFloat(glassOpacitySlider.value) }, 'UI透明度已保存');
+    });
+
+    // --- Initial Load ---
+    loadSettings();
+    loadBackgroundSettings();
+
+    // --- Handle Bootstrap Tab saving state in URL ---
+    const hash = window.location.hash;
+    if (hash) {
+        const tab = document.querySelector(hash);
+        if (tab) {
+            new bootstrap.Tab(tab).show();
+        }
+    }
+    document.querySelectorAll('button[data-bs-toggle="pill"]').forEach(tabEl => {
+        tabEl.addEventListener('shown.bs.tab', event => {
+            history.replaceState(null, null, '#' + event.target.id);
+        });
+    });
+
+    // --- Log Viewer Logic ---
+    const logContainer = document.getElementById('log-container');
+    const logStreamToggle = document.getElementById('log-stream-toggle');
+    let eventSource = null;
+
+    function addLogLine(line) {
+        const wasScrolledToBottom = logContainer.scrollHeight - logContainer.clientHeight <= logContainer.scrollTop + 5;
+        
+        const lineEl = document.createElement('div');
+        lineEl.className = 'log-line'; // Add class for styling
+
+        if (line.includes('[ERROR]')) {
+            lineEl.style.color = '#ff7b7b'; // Red for errors
+        } else if (line.includes('[WARNING]')) {
+            lineEl.style.color = '#ffc107'; // Yellow for warnings
+        }
+        // No need for else, default color is set by CSS
+        
+        lineEl.textContent = line;
+        logContainer.appendChild(lineEl);
+
+        // 限制最大行数，防止浏览器卡顿
+        while (logContainer.children.length > 1000) {
+            logContainer.removeChild(logContainer.firstChild);
+        }
+
+        if (wasScrolledToBottom) {
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
+    }
+
+    function startLogStream() {
+        if (eventSource && eventSource.readyState !== EventSource.CLOSED) {
+            return; // Stream is already open
+        }
+
+        logContainer.innerHTML = `
+            <div class="text-center log-status-message" style="padding-top: 40px; padding-bottom: 40px;">
+                <div class="spinner-border spinner-border-sm" role="status"></div>
+                <span class="ms-2">正在连接日志流...</span>
+            </div>`;
+
+        eventSource = new EventSource('/api/admin/logs/stream');
+        
+        let hasClearedPlaceholder = false;
+
+        eventSource.onopen = function() {
+            // 连接打开时，只在控制台记录日志，不再操作DOM，避免竞争
+            console.log("Log stream connection opened.");
+        };
+
+        eventSource.onmessage = function(event) {
+            // 收到第一条消息时，执行一次性清空操作
+            if (!hasClearedPlaceholder) {
+                logContainer.innerHTML = ''; // 彻底清空容器，移除所有节点
+                hasClearedPlaceholder = true;
+            }
+            
+            if (logStreamToggle.checked) {
+                addLogLine(event.data);
+            }
+        };
+
+        eventSource.onerror = function(err) {
+            console.error("EventSource failed:", err);
+            // 只有当流彻底关闭时，才显示错误并停止。
+            // readyState === 2 (CLOSED)
+            if (eventSource.readyState === EventSource.CLOSED) {
+                logContainer.innerHTML = '<div class="text-danger p-3 text-center log-status-message">无法连接到日志流，连接已关闭。请检查服务器状态并尝试刷新页面。</div>';
+            }
+            // 对于可恢复的错误，SSE会尝试自动重连，我们不在此处添加干扰性信息。
+        };
+    }
+
+    logStreamToggle.addEventListener('change', function() {
+        if (this.checked) {
+            if (!eventSource || eventSource.readyState === EventSource.CLOSED) {
+                startLogStream();
+            }
+        } else {
+            if (eventSource) {
+                eventSource.close();
+                 addLogLine('[STREAM] 日志流已手动暂停。');
+            }
+        }
+    });
+
+    const logsTab = document.getElementById('v-pills-logs-tab');
+    if (logsTab) {
+        // 优化：当URL hash匹配或首次点击Tab时，直接启动日志流
+        const startOnce = () => {
+            startLogStream();
+            // 使用one()之后，这个监听器会自动移除，避免重复执行
+        };
+        
+        if(window.location.hash === '#v-pills-logs-tab') {
+            startOnce();
+        }
+        $(logsTab).one('shown.bs.tab', startOnce);
+    }
+
+    // --- Device Info Logic ---
+    function loadSystemInfo() {
+        const container = $('#system-info-container');
+        container.html('<div class="text-center p-5"><div class="spinner-border text-primary" role="status"></div><p class="mt-2">正在获取系统信息...</p></div>');
+
+        fetch('/api/admin/system_info')
+            .then(res => {
+                if (!res.ok) throw new Error('无法从服务器获取信息。');
+                return res.json();
+            })
+            .then(data => {
+                if (data.error) throw new Error(data.error);
+                
+                let gpuInfoHtml = '';
+                if (data.gpus && data.gpus.length > 0) {
+                    gpuInfoHtml = data.gpus.map((gpu, index) => `
+                        <li class="list-group-item">
+                            <i class="bi bi-gpu-card me-2 text-success"></i>
+                            <strong>显卡 ${index}:</strong> ${gpu}
+                        </li>
+                    `).join('');
+                } else {
+                    gpuInfoHtml = '<li class="list-group-item"><i class="bi bi-cpu-fill me-2 text-warning"></i> 未检测到可用GPU (CUDA)</li>';
+                }
+
+                const cpuInfoHtml = `
+                    <li class="list-group-item">
+                        <i class="bi bi-cpu-fill me-2"></i>
+                        <strong>CPU:</strong> ${data.cpu.model} (${data.cpu.cores} 核心)
+                    </li>`;
+
+                container.html(`
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <h5><i class="bi bi-pc-display-horizontal me-2"></i>硬件信息</h5>
+                            <ul class="list-group list-group-flush">
+                                ${gpuInfoHtml}
+                                ${cpuInfoHtml}
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h5><i class="bi bi-journal-code me-2"></i>软件与库</h5>
+                            <ul class="list-group list-group-flush">
+                                <li class="list-group-item"><strong>Python:</strong> ${data.python_version}</li>
+                                <li class="list-group-item"><strong>Torch:</strong> ${data.torch_version}</li>
+                                <li class="list-group-item"><strong>YOLO:</strong> ${data.yolo_version}</li>
+                                <li class="list-group-item"><strong>NumPy:</strong> ${data.numpy_version}</li>
+                                <li class="list-group-item"><strong>Pillow:</strong> ${data.pillow_version}</li>
+                                <li class="list-group-item"><strong>OpenCV:</strong> ${data.cv2_version}</li>
+                            </ul>
+                        </div>
+                    </div>
+                `);
+            })
+            .catch(error => {
+                container.html(`<div class="alert alert-danger">${error.message}</div>`);
+            });
+    }
+
+    const deviceTab = document.getElementById('v-pills-device-tab');
+    if (deviceTab) {
+        if(window.location.hash === '#v-pills-device-tab') {
+            loadSystemInfo();
+        }
+        $(deviceTab).one('shown.bs.tab', loadSystemInfo);
+    }
+
+
+    // --- Account Management Logic ---
+    function loadUsers() {
+        const userList = $('#user-list');
+        userList.html('<li class="list-group-item text-center p-5"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div></li>');
+        
+        $.getJSON('/auth/api/admin/users')
+            .done(function(users) {
+                userList.empty();
+                if (users.length === 0) {
+                    userList.append('<li class="list-group-item text-muted">系统中没有用户。</li>');
+                    return;
+                }
+                users.forEach(function(username) {
+                    const isCurrentUser = username === '{{ current_user.id }}';
+                    const badge = isCurrentUser ? '<span class="badge bg-success ms-2">当前用户</span>' : '';
+                    const delBtn = `<button class="btn btn-sm btn-outline-danger delete-user-btn" data-username="${username}" ${isCurrentUser ? 'disabled' : ''}><i class="bi bi-trash-fill"></i></button>`;
+                    userList.append(`<li class="list-group-item d-flex justify-content-between align-items-center"><span><i class="bi bi-person-fill me-2"></i>${username}${badge}</span>${delBtn}</li>`);
+                });
+            })
+            .fail(function(xhr) {
+                userList.html('<li class="list-group-item list-group-item-danger">无法加载用户列表。</li>');
+                showToast('加载用户列表失败: ' + (xhr.responseJSON?.message || '未知错误'), 'danger');
+            });
+    }
+
+    function setupAccountHandlers() {
+        $('#add-user-btn').on('click', function() {
+            const username = $('#new-username').val().trim();
+            if (!username) {
+                showToast('请输入用户名', 'warning');
+                return;
+            }
+            $.ajax({
+                url: '/auth/api/admin/users',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({ username: username }),
+                success: function(res) {
+                    showToast(res.message, 'success');
+                    $('#new-username').val('');
+                    loadUsers();
+                },
+                error: (xhr) => showToast('创建失败: ' + (xhr.responseJSON?.message || '未知错误'), 'error')
+            });
+        });
+
+        $('#new-username').on('keypress', function(e) {
+            if (e.which === 13) { // Enter key
+                e.preventDefault();
+                $('#add-user-btn').click();
+            }
+        });
+
+        $('#user-list').on('click', '.delete-user-btn', function() {
+            const username = $(this).data('username');
+            if (!confirm(`您确定要删除用户 "${username}" 吗？此操作无法撤销。`)) return;
+            $.ajax({
+                url: '/auth/api/admin/users',
+                type: 'DELETE',
+                contentType: 'application/json',
+                data: JSON.stringify({ username: username }),
+                success: function(res) {
+                    showToast(res.message, 'success');
+                    loadUsers();
+                },
+                error: (xhr) => showToast('删除失败: ' + (xhr.responseJSON?.message || '未知错误'), 'error')
+            });
+        });
+    }
+
+    setupAccountHandlers();
+    
+    // Lazy load users when account tab is shown for the first time
+    const accountTab = document.getElementById('v-pills-account-tab');
+    if (accountTab) {
+        if(window.location.hash === '#v-pills-account-tab') {
+            loadUsers();
+        }
+        $(accountTab).one('shown.bs.tab', loadUsers);
+    }
+
+        // --- Citation Card Logic ---
+        function parseAndDisplayBibtex(row) {
+        const bibtexCode = row.find('code').text();
+        const bibtexId = row.data('bibtex-id');
+
+        const getBibtexValue = (key) => {
+            const regex = new RegExp(`${key}\\s*=\\s*{(.*?)}`, 'i');
+            const match = bibtexCode.match(regex);
+            if (match && match[1]) {
+                return match[1].trim().replace(/,$/, '');
+            }
+            return '';
+        };
+
+        const title = getBibtexValue('title');
+        const version = getBibtexValue('version');
+        const year = getBibtexValue('year');
+        const authors = getBibtexValue('author');
+        const license = getBibtexValue('license');
+        const url = getBibtexValue('url');
+        const orcids = getBibtexValue('orcid').split(/,\s*/);
+        const authorArray = authors.split(/,\s*|\s+and\s+/);
+
+        row.find('.project-title').text(title);
+        row.find('.project-version').text(`v${version} (${year})`);
+        row.find('.license-badge').text(license || 'N/A');
+        
+        // Populate authors with ORCID links
+        let authorsHtml = authorArray.map((author, index) => {
+            const orcid = orcids[index];
+            if (orcid) {
+                return `<a href="https://orcid.org/${orcid}" target="_blank" title="ORCID: ${orcid}">${author}</a>`;
+            }
+            return author;
+        }).join(', ');
+        row.find('.project-authors').html(`<strong>Authors:</strong> ${authorsHtml}`);
+
+        // Populate links
+        const linksContainer = row.find('.project-links');
+        if (url) {
+            linksContainer.prepend(`<a href="${url}" target="_blank">Homepage</a>`);
+        }
+        linksContainer.append(`<a data-bs-toggle="collapse" href="#bibtex-collapse-${bibtexId}" role="button">BibTeX</a>`);
+        
+        // Populate the collapsible BibTeX content
+        $(`#bibtex-collapse-${bibtexId} pre`).text(bibtexCode.trim());
+    }
+
+    const aboutTab = document.getElementById('v-pills-about-tab');
+    if (aboutTab) {
+        const initCitations = () => {
+             $('.citation-data-row').each(function() {
+                parseAndDisplayBibtex($(this));
+             });
+        };
+        if(window.location.hash === '#v-pills-about-tab') {
+            initCitations();
+        }
+        $(aboutTab).one('shown.bs.tab', initCitations);
+    }
+});
+</script>
+{% endblock %}
