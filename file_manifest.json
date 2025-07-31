@@ -1,12 +1,12 @@
 {
   "version": "1.0.0",
   "update_notes": "版本 1.0.0 更新",
-  "last_update": "2025-07-31T07:51:43Z",
+  "last_update": "2025-07-31T07:56:33Z",
   "files": {
     "app.py": {
       "path": "app.py",
-      "sha256": "bfa903b37d78215763f89676a86e4d7706eb57ef2185bf75137b00d925af8f0a",
-      "size": 10060,
+      "sha256": "2246019eb9fcdceb88b43266595b9eec946e63b81bc3b54913ae14361aed8a18",
+      "size": 10059,
       "download_url": "https://gh-proxy.com/https://github.com/CNLonely/DeepInsightOtakuApp/raw/main/app.py",
       "category": "python",
       "required": true,
