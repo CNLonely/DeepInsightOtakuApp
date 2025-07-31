@@ -1,0 +1,675 @@
+{% extends "_base.html" %}
+
+{% block title %}B站机器人管理{% endblock %}
+
+{% block styles %}
+<style>
+    /* Copied from settings.html for consistency */
+    .settings-container {
+        display: flex;
+        gap: 2rem;
+        width: 100%;
+        max-width: 1200px;
+    }
+
+    .settings-nav {
+        flex: 0 0 240px;
+        align-self: flex-start;
+    }
+
+    .settings-content {
+        flex-grow: 1;
+        min-width: 0;
+    }
+
+    .nav-pills .nav-link {
+        color: var(--c-text-light);
+        transition: all 0.2s ease-in-out;
+    }
+
+    .nav-pills .nav-link.active, .nav-pills .show>.nav-link {
+        color: var(--primary-color);
+        background-color: color-mix(in srgb, var(--primary-color), transparent 85%);
+        font-weight: 500;
+    }
+
+    .nav-pills .nav-link:not(.active):hover {
+        background-color: var(--c-bg);
+        color: var(--c-text);
+    }
+
+    .tab-pane {
+        display: none;
+    }
+    .tab-pane.active {
+        display: block;
+        animation: fadeIn .4s ease-out;
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    /* End of copied styles */
+
+    .status-dot {
+        height: 10px;
+        width: 10px;
+        border-radius: 50%;
+        display: inline-block;
+        vertical-align: middle;
+        margin-right: 6px;
+    }
+    .status-dot.online { 
+        background-color: #28a745; 
+        box-shadow: 0 0 7px #28a745;
+    }
+    .status-dot.offline { 
+        background-color: #ff4d4f;
+        box-shadow: 0 0 7px #ff4d4f;
+    }
+
+    #log-container {
+        background-color: rgba(20, 20, 22, 0.85) !important;
+        backdrop-filter: blur(5px);
+        font-size: 0.8rem !important; /* Smaller font size */
+        font-weight: 500;
+        color: #6eff6e;
+    }
+
+    .log-line {
+        padding-bottom: 2px;
+        margin-bottom: 2px;
+        border-bottom: 1px solid #444; /* Slightly dimmer */
+    }
+    .log-line:last-of-type {
+        border-bottom: none;
+    }
+</style>
+{% endblock %}
+
+
+{% block content %}
+<main class="d-flex flex-column align-items-center flex-grow-1 w-100 px-3 pt-4 pb-4">
+<div class="settings-container">
+    <!-- Left Sidebar Navigation -->
+    <div class="settings-nav frosted-glass-card p-4">
+        <h2 class="h5 mb-3">B站机器人</h2>
+        <div class="nav flex-column nav-pills me-3" id="v-pills-tab" role="tablist" aria-orientation="vertical">
+            <button class="nav-link text-start active" id="v-pills-status-tab" data-bs-toggle="pill" data-bs-target="#v-pills-status" type="button" role="tab" aria-controls="v-pills-status" aria-selected="true">
+                <i class="bi bi-robot me-2"></i> 状态与控制
+            </button>
+            <button class="nav-link text-start" id="v-pills-settings-tab" data-bs-toggle="pill" data-bs-target="#v-pills-settings" type="button" role="tab" aria-controls="v-pills-settings" aria-selected="false">
+                <i class="bi bi-gear-fill me-2"></i> 参数设置
+            </button>
+            <button class="nav-link text-start" id="v-pills-logs-tab" data-bs-toggle="pill" data-bs-target="#v-pills-logs" type="button" role="tab" aria-controls="v-pills-logs" aria-selected="false">
+                <i class="bi bi-terminal-fill me-2"></i> 实时日志
+            </button>
+        </div>
+    </div>
+
+    <!-- Right Content Area -->
+    <div class="settings-content">
+        <div class="tab-content" id="v-pills-tabContent">
+            <!-- Status & Control Pane -->
+            <div class="tab-pane fade show active" id="v-pills-status" role="tabpanel" aria-labelledby="v-pills-status-tab">
+                <div class="frosted-glass-card p-4">
+                    <h3 class="mb-4">状态与控制</h3>
+                    
+                    <div id="login-status-container">
+                        <!-- JS content for login -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Settings Pane -->
+            <div class="tab-pane fade" id="v-pills-settings" role="tabpanel" aria-labelledby="v-pills-settings-tab">
+                <div class="frosted-glass-card p-4">
+                    <h3 class="mb-4">参数设置</h3>
+                    <form id="settings-form">
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <label for="polling-interval-base" class="form-label">基础轮询间隔 (秒)</label>
+                                <input type="number" class="form-control" id="polling-interval-base" min="5" value="15">
+                                <div class="form-text">机器人检查新@消息的基础频率。</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="polling-interval-jitter" class="form-label">随机抖动范围 (秒)</label>
+                                <input type="number" class="form-control" id="polling-interval-jitter" min="0" value="10">
+                                <div class="form-text">在基础间隔上随机增加或减少的时间，以模拟人类行为。</div>
+                            </div>
+                        </div>
+                        <div class="mb-4">
+                            <label for="confidence-threshold-slider" class="form-label d-flex justify-content-between">
+                                <span>识别置信度阈值</span>
+                                <span id="confidence-threshold-value" class="badge bg-secondary rounded-pill">0.55</span>
+                            </label>
+                            <input type="range" class="form-range" id="confidence-threshold-slider" min="0.1" max="1.0" step="0.01" value="0.55">
+                            <div class="form-text">只有当识别结果的最高分高于此阈值时，才会被计入有效结果。</div>
+                        </div>
+                        <div class="mb-4">
+                            <label for="trigger-keyword" class="form-label">触发关键词</label>
+                            <input type="text" class="form-control" id="trigger-keyword">
+                            <div class="form-text">当用户的@消息中包含此关键词时，机器人会响应。</div>
+                        </div>
+                        <div class="mb-4">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" role="switch" id="use-obfuscation-switch">
+                                <label class="form-check-label" for="use-obfuscation-switch">启用高级防屏蔽策略</label>
+                            </div>
+                            <div class="form-text">
+                                开启后，机器人会自动在回复中随机插入一些隐形字符或变体字形，以最大限度地规避B站的重复内容检测。
+                            </div>
+                        </div>
+                        <div class="mb-4">
+                            <label class="form-label">回复模板 (机器人会随机选择一个进行回复)</label>
+                            <div id="reply-templates-list" class="list-group">
+                                <!-- JS will populate this -->
+                            </div>
+                            <button type="button" class="btn btn-sm btn-outline-secondary mt-2" id="add-template-btn">
+                                <i class="bi bi-plus-lg me-1"></i>添加一个新模板
+                            </button>
+                            <div class="form-text mt-2">
+                                可用变量: <code>{video_title}</code>, <code>{timeline}</code>, <code>{nickname}</code>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label">随机元素池 (机器人会随机挑选1-2个附加到回复末尾)</label>
+                            <div id="embellishments-container" class="p-2 border rounded" style="min-height: 80px;">
+                                <!-- JS will populate this -->
+                            </div>
+                             <div class="input-group mt-2">
+                                <input type="text" id="new-embellishment-input" class="form-control" placeholder="输入新元素后按回车或点按钮">
+                                <button class="btn btn-outline-secondary" type="button" id="add-embellishment-btn">
+                                    <i class="bi bi-plus-lg"></i> 添加
+                                </button>
+                            </div>
+                            <div class="form-text">例如: [doge], (｡･ω･｡)ﾉ♡, 哒~</div>
+                        </div>
+                        
+                    </form>
+                </div>
+            </div>
+
+            <!-- Logs Pane -->
+            <div class="tab-pane fade" id="v-pills-logs" role="tabpanel" aria-labelledby="v-pills-logs-tab">
+                <div class="frosted-glass-card p-4 h-100">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h3 class="mb-0">实时日志</h3>
+                        <span class="badge bg-secondary">BiliBot</span>
+                    </div>
+                    <div id="log-container" class="px-3 pt-2 pb-3 rounded font-monospace" style="height: 600px; overflow-y: auto; white-space: pre-wrap; word-break: break-all; line-height: 1.3;">
+                        <div class="text-center text-muted py-5 log-status-message">
+                            <div class="spinner-border spinner-border-sm" role="status"></div>
+                            <span class="ms-2">等待日志流...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Template Edit Modal -->
+<div class="modal fade" id="template-edit-modal" tabindex="-1" aria-labelledby="templateEditModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="templateEditModalLabel">编辑模板</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form>
+            <input type="hidden" id="template-edit-index">
+            <div class="mb-3">
+                <label for="template-textarea" class="form-label">模板内容</label>
+                <textarea class="form-control" id="template-textarea" rows="6"></textarea>
+                 <div class="form-text mt-2">
+                    可用变量: <code>{video_title}</code>, <code>{timeline}</code>, <code>{nickname}</code>
+                </div>
+            </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+        <button type="button" class="btn btn-primary" id="save-template-btn">保存</button>
+      </div>
+    </div>
+  </div>
+</div>
+</main>
+{% endblock %}
+
+{% block scripts %}
+<script>
+$(document).ready(function() {
+    let qrCheckInterval;
+    let statusInterval;
+    let currentTemplates = [];
+    let currentEmbellishments = [];
+    const templateEditModal = new bootstrap.Modal(document.getElementById('template-edit-modal'));
+    let saveTimeout;
+
+    // --- Debounced Save Function ---
+    function debouncedSave() {
+        clearTimeout(saveTimeout);
+        saveTimeout = setTimeout(saveSettings, 800); // 800ms delay
+    }
+
+    function saveSettings() {
+        clearTimeout(saveTimeout); // Clear any pending timeout
+
+        const settings = {
+            polling_interval_base: parseInt($('#polling-interval-base').val(), 10),
+            polling_interval_jitter: parseInt($('#polling-interval-jitter').val(), 10),
+            trigger_keyword: $('#trigger-keyword').val().trim(),
+            confidence_threshold: parseFloat($('#confidence-threshold-slider').val()),
+            reply_templates: currentTemplates, // Use the JS array
+            random_embellishments: currentEmbellishments,
+            use_obfuscation: $('#use-obfuscation-switch').is(':checked')
+        };
+        
+        // Basic validation before sending
+        if(settings.polling_interval_base < 5) {
+            showToast('基础轮询间隔不能小于5秒', 'warning');
+            return;
+        }
+        if(settings.polling_interval_jitter < 0) {
+            showToast('随机抖动范围不能为负数', 'warning');
+            return;
+        }
+        if(!settings.trigger_keyword) {
+            showToast('触发关键词不能为空', 'warning');
+            return;
+        }
+
+        $.ajax({
+            url: "{{ url_for('bilibot.api_bilibot_config') }}",
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(settings),
+            success: (data) => showToast('设置已自动保存', 'success', 1500),
+            error: (xhr) => showToast('保存失败: ' + (xhr.responseJSON?.message || '未知错误'), 'danger')
+        });
+    }
+
+
+    function renderStatus(data) {
+        const loginContainer = $('#login-status-container');
+        if (data.logged_in) {
+            const userInfo = data.user_info;
+            const encodedAvatarUrl = encodeURIComponent(userInfo.face);
+            const proxyUrl = `{{ url_for('bilibot.bilibot_avatar_proxy') }}?url=${encodedAvatarUrl}`;
+
+            loginContainer.html(`
+                <div class="d-flex align-items-center mb-3">
+                    <img src="${proxyUrl}" class="rounded-circle me-3" width="50" height="50" alt="avatar">
+                    <div>
+                        <h5 class="mb-0">${userInfo.name}</h5>
+                        <span class="text-muted small">UID: ${userInfo.mid}</span>
+                    </div>
+                    <button id="btn-logout" class="btn btn-sm btn-outline-warning ms-auto">退出登录</button>
+                </div>
+                <hr>
+                <div class="d-flex justify-content-between align-items-center">
+                    <div class="d-flex align-items-center">
+                        <h5 class="mb-0 me-3">运行状态</h5>
+                        <span class="badge fs-6 ${data.running ? 'bg-success' : 'bg-danger'}">
+                           <span class="status-dot ${data.running ? 'online' : 'offline'}"></span>
+                           ${data.running ? '运行中' : '已停止'}
+                        </span>
+                    </div>
+                    <div>
+                        <button id="btn-start" class="btn btn-success" ${data.running ? 'disabled' : ''}><i class="bi bi-play-circle-fill me-2"></i>启动</button>
+                        <button id="btn-stop" class="btn btn-danger ms-2" ${!data.running ? 'disabled' : ''}><i class="bi bi-stop-circle-fill me-2"></i>停止</button>
+                    </div>
+                </div>
+            `);
+        } else {
+            loginContainer.html(`
+                <p class="text-muted">需要登录B站账号才能启动机器人。</p>
+                <button id="btn-show-qrcode" class="btn btn-primary w-100"><i class="bi bi-qr-code-scan me-2"></i>点击扫码登录</button>
+                <div id="qrcode-container" class="text-center p-3 mt-3 border rounded" style="display: none;">
+                    <p class="text-muted small mb-2">请使用Bilibili手机客户端扫描</p>
+                    <img id="qrcode-image" src="" alt="登录二维码" class="img-fluid mb-2" style="max-width: 180px;"/>
+                    <p id="qrcode-message" class="mt-2 fw-bold small"></p>
+                </div>
+            `);
+        }
+        // --- Correctly access nested config object ---
+        const config = data.config || {};
+
+        // Update settings form fields
+        $('#polling-interval-base').val(config.polling_interval_base);
+        $('#polling-interval-jitter').val(config.polling_interval_jitter);
+        $('#trigger-keyword').val(config.trigger_keyword || '识别动漫');
+        
+        const confidenceThreshold = config.confidence_threshold || 0.55;
+        $('#confidence-threshold-slider').val(confidenceThreshold);
+        $('#confidence-threshold-value').text(confidenceThreshold);
+
+        // Store and render reply templates
+        currentTemplates = config.reply_templates || [];
+        renderTemplatesList();
+
+        // Store and render embellishments
+        currentEmbellishments = config.random_embellishments || [];
+        renderEmbellishments();
+
+        // Set obfuscation switch state
+        $('#use-obfuscation-switch').prop('checked', config.use_obfuscation);
+    }
+
+    function renderTemplatesList() {
+        const listContainer = $('#reply-templates-list');
+        listContainer.empty();
+        if (currentTemplates.length > 0) {
+            currentTemplates.forEach((template, index) => {
+                const item = $(`
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <pre class="mb-0 flex-grow-1" style="white-space: pre-wrap; word-break: break-all;">${escapeHtml(template)}</pre>
+                        <div class="ms-3">
+                            <button type="button" class="btn btn-sm btn-outline-primary edit-template-btn" data-index="${index}" title="编辑">
+                                <i class="bi bi-pencil-fill"></i>
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-danger remove-template-btn ms-2" data-index="${index}" title="删除">
+                                <i class="bi bi-trash3-fill"></i>
+                            </button>
+                        </div>
+                    </div>
+                `);
+                listContainer.append(item);
+            });
+        } else {
+            listContainer.append('<div class="list-group-item text-muted small">没有模板，请添加一个。</div>');
+        }
+    }
+
+    function renderEmbellishments() {
+        const container = $('#embellishments-container');
+        container.empty();
+        if (currentEmbellishments.length > 0) {
+            currentEmbellishments.forEach((item, index) => {
+                const badge = $(`
+                    <span class="badge text-bg-primary fs-6 me-2 mb-2 d-inline-flex align-items-center">
+                        ${escapeHtml(item)}
+                        <button type="button" class="btn-close btn-close-white ms-2 remove-embellishment-btn" aria-label="Close" data-index="${index}"></button>
+                    </span>
+                `);
+                container.append(badge);
+            });
+        } else {
+            container.append('<span class="text-muted small p-2">元素池为空，快来添加一些有趣的表情或短语吧！</span>');
+        }
+    }
+    
+    function updateStatus() {
+        $.getJSON("{{ url_for('bilibot.api_get_status') }}", renderStatus);
+    }
+
+    function getQRCode() {
+        const qrContainer = $('#qrcode-container');
+        qrContainer.slideDown('fast');
+        $('#qrcode-image').attr('src', '');
+        $('#qrcode-message').text('正在生成二维码...');
+        $.getJSON("{{ url_for('bilibot.api_bilibot_login_qrcode') }}", function(data) {
+            if(data.success) {
+                $('#qrcode-image').attr('src', 'data:image/png;base64,' + data.image);
+                $('#qrcode-message').text('请扫描二维码');
+                startPolling();
+            } else {
+                $('#qrcode-message').text('获取二维码失败: ' + data.message);
+            }
+        });
+    }
+
+    function startPolling() {
+        if (qrCheckInterval) clearInterval(qrCheckInterval);
+        qrCheckInterval = setInterval(function() {
+            $.getJSON("{{ url_for('bilibot.api_bilibot_login_check') }}", function(data) {
+                if (data.success) {
+                    clearInterval(qrCheckInterval);
+                    showToast('B站账号登录成功！', 'success');
+                    updateStatus();
+                } else if (data.code === 86038) {
+                    clearInterval(qrCheckInterval);
+                    $('#qrcode-message').text('二维码已失效，请重新获取。');
+                    setTimeout(() => $('#qrcode-container').slideUp('fast'), 3000);
+                } else if (data.message) {
+                    $('#qrcode-message').text(data.message);
+                }
+            });
+        }, 2000);
+    }
+
+    function controlBot(action) {
+        $.ajax({
+            url: "{{ url_for('bilibot.control_bilibot') }}",
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({ action: action }),
+            success: function() {
+                showToast(`机器人指令已发送`, 'info', 1500);
+                // Short delay to allow backend to process, then update UI with real status
+                setTimeout(updateStatus, 1000);
+            },
+            error: () => {
+                showToast('操作失败，请查看主日志', 'danger');
+                // If it fails, restore the UI by fetching the status again
+                updateStatus();
+            }
+        });
+    }
+
+    // Event Delegation for controls
+    $(document).on('click', '#btn-show-qrcode', getQRCode);
+    $(document).on('click', '#btn-logout', function() {
+        if (confirm('确定要退出B站登录吗？机器人将会停止。')) {
+            $.ajax({
+                url: "{{ url_for('bilibot.api_logout') }}",
+                type: 'POST',
+                success: function(data) {
+                    showToast('已退出登录', 'info');
+                    updateStatus();
+                },
+                error: function() {
+                    showToast('登出时发生错误', 'danger');
+                }
+            });
+        }
+    });
+
+    $(document).on('click', '#btn-start', function() {
+        const statusBadge = $('.badge.fs-6');
+        $('#btn-start, #btn-stop').prop('disabled', true);
+        statusBadge.removeClass('bg-success bg-danger').addClass('bg-warning text-dark');
+        statusBadge.html(`<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>启动中...`);
+        controlBot('start');
+    });
+
+    $(document).on('click', '#btn-stop', function() {
+        const statusBadge = $('.badge.fs-6');
+        $('#btn-start, #btn-stop').prop('disabled', true);
+        statusBadge.removeClass('bg-success bg-danger').addClass('bg-warning text-dark');
+        statusBadge.html(`<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>停止中...`);
+        controlBot('stop');
+    });
+
+
+    // --- Settings Auto-Save Logic ---
+    function setupAutoSaveHandlers() {
+        $('#polling-interval-base, #polling-interval-jitter, #trigger-keyword').on('input', debouncedSave);
+        $('#confidence-threshold-slider').on('change', saveSettings); // 'change' fires after release
+        $('#use-obfuscation-switch').on('change', saveSettings);
+        
+        $('#confidence-threshold-slider').on('input', function() {
+            $('#confidence-threshold-value').text($(this).val());
+        });
+    }
+
+    // --- Template Management Logic ---
+    
+    // ADD
+    $('#add-template-btn').on('click', function() {
+        $('#templateEditModalLabel').text('新增回复模板');
+        $('#template-edit-index').val('');
+        $('#template-textarea').val('');
+        templateEditModal.show();
+    });
+
+    // EDIT (via delegation)
+    $('#reply-templates-list').on('click', '.edit-template-btn', function() {
+        const index = $(this).data('index');
+        const templateText = currentTemplates[index];
+        $('#templateEditModalLabel').text('编辑回复模板');
+        $('#template-edit-index').val(index);
+        $('#template-textarea').val(templateText);
+        templateEditModal.show();
+    });
+
+    // SAVE from Modal
+    $('#save-template-btn').on('click', function() {
+        const index = $('#template-edit-index').val();
+        const newText = $('#template-textarea').val().trim();
+
+        if (!newText) {
+            showToast('模板内容不能为空', 'warning');
+            return;
+        }
+
+        if (index !== '') {
+            // Editing existing
+            currentTemplates[parseInt(index, 10)] = newText;
+        } else {
+            // Adding new
+            currentTemplates.push(newText);
+        }
+        
+        renderTemplatesList();
+        templateEditModal.hide();
+        saveSettings(); // Directly save after template change
+    });
+
+    // REMOVE (via delegation)
+    $('#reply-templates-list').on('click', '.remove-template-btn', function() {
+        const index = $(this).data('index');
+        if (confirm(`确定要删除这个模板吗？\n\n"${currentTemplates[index].substring(0, 50)}..."`)) {
+            currentTemplates.splice(index, 1);
+            renderTemplatesList();
+            saveSettings(); // Directly save after template change
+        }
+    });
+
+    // --- Embellishment Management ---
+    function addEmbellishment() {
+        const input = $('#new-embellishment-input');
+        const value = input.val().trim();
+        if (value) {
+            if (currentEmbellishments.includes(value)) {
+                showToast('这个元素已经存在了', 'warning');
+                return;
+            }
+            currentEmbellishments.push(value);
+            renderEmbellishments();
+            saveSettings();
+            input.val(''); // Clear input
+        }
+    }
+
+    $('#add-embellishment-btn').on('click', addEmbellishment);
+    $('#new-embellishment-input').on('keypress', function(e) {
+        if (e.which === 13) { // Enter key
+            e.preventDefault();
+            addEmbellishment();
+        }
+    });
+
+    $('#embellishments-container').on('click', '.remove-embellishment-btn', function() {
+        const index = $(this).data('index');
+        currentEmbellishments.splice(index, 1);
+        renderEmbellishments();
+        saveSettings();
+    });
+
+    function escapeHtml(text) {
+        return text
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
+
+    function addLogLine(line) {
+        const logContainer = document.getElementById('log-container');
+        const wasScrolledToBottom = logContainer.scrollHeight - logContainer.clientHeight <= logContainer.scrollTop + 5;
+        
+        const lineEl = document.createElement('div');
+        lineEl.className = 'log-line';
+
+        const cleanLine = line.replace(/\[BiliBot\]\s*/, '');
+
+        if (cleanLine.includes('[ERROR]')) {
+            lineEl.style.color = '#ff7b7b';
+        } else if (cleanLine.includes('[WARNING]')) {
+            lineEl.style.color = '#ffc107';
+        }
+        
+        lineEl.textContent = cleanLine;
+        logContainer.appendChild(lineEl);
+
+        while (logContainer.children.length > 1000) {
+            logContainer.removeChild(logContainer.firstChild);
+        }
+
+        if (wasScrolledToBottom) {
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
+    }
+
+    function startLogStream() {
+        const logContainer = document.getElementById('log-container');
+        const statusMessage = logContainer.querySelector('.log-status-message');
+        if(statusMessage) {
+            statusMessage.innerHTML = '<div class="spinner-border spinner-border-sm" role="status"></div><span class="ms-2">正在连接日志流...</span>';
+        }
+
+        const eventSource = new EventSource("{{ url_for('logs_api.logs_stream') }}");
+        
+        let hasClearedPlaceholder = false;
+        
+        eventSource.onmessage = function(event) {
+            // On first message, clear the container completely.
+            if (!hasClearedPlaceholder) {
+                logContainer.innerHTML = ''; 
+                hasClearedPlaceholder = true;
+            }
+
+            if (event.data.includes('[BiliBot]')) {
+                addLogLine(event.data);
+            }
+        };
+
+        eventSource.onerror = function() {
+            addLogLine('[STREAM] 日志流连接已断开。');
+            eventSource.close();
+        };
+    }
+    
+    $('#v-pills-logs-tab').one('shown.bs.tab', startLogStream);
+    
+    if (window.location.hash) {
+        const tab = document.querySelector(window.location.hash);
+        if (tab) new bootstrap.Tab(tab).show();
+    }
+    document.querySelectorAll('button[data-bs-toggle="pill"]').forEach(tabEl => {
+        tabEl.addEventListener('shown.bs.tab', e => history.replaceState(null, null, '#' + e.target.id));
+    });
+
+    updateStatus();
+    setupAutoSaveHandlers(); // Setup auto-save
+    statusInterval = setInterval(updateStatus, 30000);
+});
+</script>
+{% endblock %} 
