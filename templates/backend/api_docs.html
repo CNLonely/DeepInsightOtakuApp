@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API 文档 - {{ config.project_name or '识别系统' }}</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.10.5/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link href="https://fonts.geekzu.org/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/atom-one-dark.min.css">
+    <style>
+        :root {
+            --bs-body-font-family: 'Noto Sans SC', sans-serif;
+            --c-bg: #f8f9fa;
+            --c-text: #212529;
+            --c-card: #ffffff;
+            --c-border: #dee2e6;
+            --c-code-bg: #282c34;
+            --c-code-text: #abb2bf;
+        }
+
+        body {
+            background-color: var(--c-bg);
+            color: var(--c-text);
+            font-family: var(--bs-body-font-family);
+        }
+
+        .main-header {
+            background: var(--c-card);
+            border-bottom: 1px solid var(--c-border);
+        }
+
+        .api-card {
+            border: 1px solid var(--c-border);
+            border-radius: .75rem;
+            box-shadow: none;
+        }
+        
+        .api-nav .nav-link {
+            color: var(--c-text);
+            text-align: left;
+            font-weight: 500;
+            padding: .75rem 1rem;
+            border-radius: .5rem;
+            transition: all .2s ease;
+        }
+        .api-nav .nav-link:hover {
+            background-color: color-mix(in srgb, var(--c-text), transparent 93%);
+        }
+        .api-nav .nav-link.active {
+            color: #fff;
+            background-color: #0d6efd;
+            box-shadow: 0 4px 12px rgba(13, 110, 253, .2);
+        }
+
+        .endpoint {
+            font-family: 'Menlo', 'Monaco', 'Consolas', "Courier New", monospace;
+            background-color: var(--c-bg);
+            padding: .2rem .5rem;
+            border-radius: .3rem;
+            border: 1px solid var(--c-border);
+            font-weight: 500;
+        }
+
+        .method {
+            font-weight: 700;
+            padding: .25rem .6rem;
+            border-radius: .3rem;
+            color: #fff;
+            font-size: .9em;
+        }
+
+        .method-post { background-color: #49cc90; }
+        .method-get { background-color: #61affe; }
+        .method-delete { background-color: #f93e3e; }
+
+        pre {
+            background-color: var(--c-code-bg);
+            padding: 1.25rem;
+            border-radius: .5rem;
+            font-size: .9em;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+        
+        pre code.hljs {
+            color: var(--c-code-text);
+            padding: 0; /* reset highlightjs default padding */
+        }
+        
+        .nav-pills .nav-link {
+            color: var(--c-text);
+        }
+        
+        .nav-pills .nav-link.active {
+            background-color: #0d6efd;
+        }
+
+        .table-sm th, .table-sm td {
+            padding: .4rem;
+        }
+    </style>
+</head>
+<body>
+
+    <header class="main-header p-3 mb-4">
+        <div class="container d-flex justify-content-between align-items-center">
+            <h4 class="mb-0">
+                <i class="bi bi-file-code-fill me-2"></i>API 使用文档
+            </h4>
+            <a href="/admin" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i>返回管理主页
+            </a>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="row">
+            <!-- Left Sidebar Navigation -->
+            <div class="col-lg-3">
+                <div class="nav flex-column nav-pills api-nav sticky-top" id="v-pills-tab" role="tablist" aria-orientation="vertical" style="top: 2rem;">
+                    <button class="nav-link active" id="v-pills-recognize-tab" data-bs-toggle="pill" data-bs-target="#v-pills-recognize" type="button" role="tab" aria-controls="v-pills-recognize" aria-selected="true">
+                        <span class="method method-post me-2">POST</span>/api/recognize
+                    </button>
+                    <button class="nav-link" id="v-pills-generate-tab" data-bs-toggle="pill" data-bs-target="#v-pills-generate" type="button" role="tab" aria-controls="v-pills-generate" aria-selected="false">
+                        <span class="method method-post me-2">POST</span>/api/generate_image
+                    </button>
+                </div>
+            </div>
+
+            <!-- Right Content Area -->
+            <div class="col-lg-9">
+                <div class="tab-content" id="v-pills-tabContent">
+                    
+                    <!-- API 1: Recognize (JSON) -->
+                    <div class="tab-pane fade show active" id="v-pills-recognize" role="tabpanel" aria-labelledby="v-pills-recognize-tab">
+                        <div class="card api-card">
+                             <div class="card-body p-4">
+                                <h4>获取识别结果 (JSON)</h4>
+                                <hr class="my-3">
+                                <p class="mb-3">上传一张图片，返回详细的 JSON 格式识别数据。此接口会根据系统配置自动选择V1(经典)或V2(全局修正)算法。</p>
+                                
+                                <h6 class="mt-4"><i class="bi bi-input-cursor-text me-2"></i>请求参数 (Body)</h6>
+                                <p class="text-muted">需要使用 <code>multipart/form-data</code> 格式发送请求。</p>
+                                <table class="table table-bordered">
+                                    <thead>
+                                        <tr>
+                                            <th>参数名</th>
+                                            <th>类型</th>
+                                            <th>必需</th>
+                                            <th>描述</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td><code>file</code></td>
+                                            <td>File</td>
+                                            <td>是</td>
+                                            <td>待识别的图片文件 (支持 jpg, png, webp 等格式)。</td>
+                                        </tr>
+                                        <tr>
+                                            <td><code>use_correction</code></td>
+                                            <td>Integer</td>
+                                            <td>否</td>
+                                            <td>是否开启全局修正。<code>1</code> 为开启，<code>0</code> 为关闭。如果未提供，则使用系统默认设置。</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+
+                                <h6 class="mt-4"><i class="bi bi-braces me-2"></i>示例代码</h6>
+                                <ul class="nav nav-pills mb-3" id="pills-tab-recognize" role="tablist">
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link active" data-bs-toggle="pill" data-bs-target="#pills-python-recognize" type="button">Python</button>
+                                    </li>
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link" data-bs-toggle="pill" data-bs-target="#pills-java-recognize" type="button">Java</button>
+                                    </li>
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link" data-bs-toggle="pill" data-bs-target="#pills-js-recognize" type="button">JavaScript</button>
+                                    </li>
+                                </ul>
+                                <div class="tab-content">
+                                    <div class="tab-pane fade show active" id="pills-python-recognize" role="tabpanel">
+<pre><code class="language-python">import requests
+import json
+
+# API端点URL
+api_url = "http://127.0.0.1:8000/api/recognize"
+
+# 图片文件路径
+image_path = "path/to/your/image.jpg"
+
+# 请求体 (form-data)
+# use_correction 是可选的
+payload = {'use_correction': '0'} # '0' 代表关闭修正
+
+try:
+    with open(image_path, "rb") as image_file:
+        # 'file' 是后端接收文件的字段名
+        files = {'file': (image_path, image_file, 'image/jpeg')}
+        
+        response = requests.post(api_url, files=files, data=payload)
+        response.raise_for_status()  # 如果请求失败则抛出HTTPError
+
+        # 解析JSON响应
+    data = response.json()
+        print("识别成功:")
+    print(json.dumps(data, indent=2, ensure_ascii=False))
+
+except FileNotFoundError:
+    print(f"错误: 文件未找到 - {image_path}")
+except requests.exceptions.RequestException as e:
+    print(f"请求失败: {e}")
+    # 尝试打印错误响应体
+    try:
+        print("服务器返回的错误信息:", response.json())
+    except (requests.exceptions.JSONDecodeError, AttributeError):
+        pass
+</code></pre>
+                                    </div>
+                                    <div class="tab-pane fade" id="pills-java-recognize" role="tabpanel">
+<pre><code class="language-java">// 需要添加 Apache HttpClient 依赖
+// 例如 Maven:
+// &lt;dependency&gt;
+//     &lt;groupId&gt;org.apache.httpcomponents.client5&lt;/groupId&gt;
+//     &lt;artifactId&gt;httpclient5&lt;/artifactId&gt;
+//     &lt;version&gt;5.3.1&lt;/version&gt;
+// &lt;/dependency&gt;
+import org.apache.hc.client5.http.classic.methods.HttpPost;
+import org.apache.hc.client5.http.entity.mime.FileBody;
+import org.apache.hc.client5.http.entity.mime.MultipartEntityBuilder;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
+import org.apache.hc.client5.http.impl.classic.HttpClients;
+import org.apache.hc.core5.http.HttpEntity;
+import org.apache.hc.core5.http.io.entity.EntityUtils;
+
+import java.io.File;
+import java.io.IOException;
+
+public class RecognizeApiClient {
+    public static void main(String[] args) throws IOException {
+        String apiUrl = "http://127.0.0.1:8000/api/recognize";
+        String imagePath = "path/to/your/image.jpg";
+
+        try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
+            HttpPost uploadFile = new HttpPost(apiUrl);
+            
+            MultipartEntityBuilder builder = MultipartEntityBuilder.create();
+            builder.addPart("file", new FileBody(new File(imagePath)));
+            // 添加额外参数
+            builder.addTextBody("use_correction", "0"); // "0" 代表关闭修正
+            HttpEntity multipart = builder.build();
+            
+            uploadFile.setEntity(multipart);
+
+            httpClient.execute(uploadFile, response -> {
+                System.out.println("Response status: " + response.getCode());
+                String responseBody = EntityUtils.toString(response.getEntity());
+                System.out.println("Response body:");
+                // 建议使用Gson或Jackson等库来格式化输出
+                System.out.println(responseBody); 
+                return null;
+            });
+        }
+    }
+}
+</code></pre>
+                                    </div>
+                                    <div class="tab-pane fade" id="pills-js-recognize" role="tabpanel">
+<pre><code class="language-javascript">// 在浏览器环境中使用 Fetch API
+const apiUrl = 'http://127.0.0.1:8000/api/recognize';
+
+// 假设你有一个 &lt;input type="file" id="fileInput" /&gt;
+const fileInput = document.getElementById('fileInput');
+const imageFile = fileInput.files[0];
+
+if (imageFile) {
+    const formData = new FormData();
+    formData.append('file', imageFile);
+    // 添加额外参数
+    formData.append('use_correction', '0'); // '0' 代表关闭修正
+
+    fetch(apiUrl, {
+        method: 'POST',
+        body: formData,
+    })
+    .then(response => {
+        if (!response.ok) {
+            // 如果HTTP状态码不是2xx, 也当作错误处理
+            return response.json().then(err => { throw err; });
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log('识别成功:', data);
+        document.getElementById('result').textContent = JSON.stringify(data, null, 2);
+    })
+    .catch(error => {
+        console.error('请求失败:', error);
+        document.getElementById('result').textContent = '错误: ' + (error.error || '未知错误');
+    });
+}
+</code></pre>
+                                    </div>
+                                </div>
+
+
+                                <h6 class="mt-4"><i class="bi bi-check-circle-fill text-success me-2"></i>成功响应 (JSON)</h6>
+                                <p>HTTP 状态码 <code>200 OK</code>，响应体为包含 `faces` 列表的 JSON 对象。</p>
+<pre><code class="language-json">{
+  "faces": [
+    {
+      "identity": "id_00001",
+      "score": 0.987,
+      "name": "角色A",
+      "anime": "某部动漫",
+      "first_class": 0,
+      "bounding_box": [100.0, 150.0, 212.0, 262.0],
+      "recognition_box": [80.0, 130.0, 232.0, 282.0],
+      "resolution": [112, 112],
+      "top_k": [
+        {
+      "identity": "id_00001",
+      "name": "角色A",
+          "anime": "某部动漫",
+      "score": 0.987
+        },
+        {
+          "identity": "id_00002",
+          "name": "角色B",
+          "anime": "某部动漫",
+          "score": 0.123
+        }
+      ],
+      "is_corrected": true
+    }
+  ]
+}</code></pre>
+                                <h6 class="mt-4"><i class="bi bi-card-list me-2"></i>响应字段说明</h6>
+                                <p><code>faces</code> 数组中每个对象包含以下字段：</p>
+                                <table class="table table-bordered table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>字段名</th>
+                                            <th>类型</th>
+                                            <th>描述</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr><td><code>identity</code></td><td>String</td><td>最终识别出的角色ID。若未识别，则为 "未知角色"。</td></tr>
+                                        <tr><td><code>name</code></td><td>String</td><td>最终识别出的角色名称。</td></tr>
+                                        <tr><td><code>anime</code></td><td>String</td><td>最终识别出的角色所属作品。</td></tr>
+                                        <tr><td><code>score</code></td><td>Float</td><td>最终识别结果的置信度 (0.0 - 1.0)。</td></tr>
+                                        <tr><td><code>bounding_box</code></td><td>Array</td><td>原始人脸检测框的坐标 <code>[x1, y1, x2, y2]</code>。</td></tr>
+                                        <tr><td><code>recognition_box</code></td><td>Array</td><td>用于识别的扩展框坐标 <code>[x1, y1, x2, y2]</code>。</td></tr>
+                                        <tr><td><code>resolution</code></td><td>Array</td><td>原始人脸裁剪区域的分辨率 <code>[宽, 高]</code>。</td></tr>
+                                        <tr><td><code>first_class</code></td><td>Integer | Null</td><td>初步检测模型的分类结果 (例如: 0为正面, 1为背面)。</td></tr>
+                                        <tr><td><code>is_corrected</code></td><td>Boolean</td><td>该结果是否经过V2算法的全局修正。</td></tr>
+                                        <tr><td><code>top_k</code></td><td>Array</td><td>置信度最高的 k 个候选结果列表，每个元素包含 identity, name, anime, score。</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- API 2: Generate Image -->
+                    <div class="tab-pane fade" id="v-pills-generate" role="tabpanel" aria-labelledby="v-pills-generate-tab">
+                        <div class="card api-card">
+                            <div class="card-body p-4">
+                                <h4>生成识别结果图</h4>
+                                <hr class="my-3">
+                                <p class="mb-3">上传一张图片，进行人脸检测与识别，并返回一张包含所有识别结果的PNG图片。</p>
+                                
+                                <h6 class="mt-4"><i class="bi bi-input-cursor-text me-2"></i>请求参数 (Body)</h6>
+                                <p>与 <code>/api/recognize</code> 接口完全相同。</p>
+
+                                <h6 class="mt-4"><i class="bi bi-braces me-2"></i>示例代码</h6>
+                                <ul class="nav nav-pills mb-3" id="pills-tab-generate" role="tablist">
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link active" data-bs-toggle="pill" data-bs-target="#pills-python-generate" type="button">Python</button>
+                                    </li>
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link" data-bs-toggle="pill" data-bs-target="#pills-java-generate" type="button">Java</button>
+                                    </li>
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link" data-bs-toggle="pill" data-bs-target="#pills-js-generate" type="button">JavaScript</button>
+                                    </li>
+                                </ul>
+                                <div class="tab-content">
+                                    <div class="tab-pane fade show active" id="pills-python-generate" role="tabpanel">
+<pre><code class="language-python">import requests
+
+api_url = "http://127.0.0.1:8000/api/generate_image"
+image_path = "path/to/your/image.jpg"
+output_path = "result.png"
+
+# 可选参数
+payload = {'use_correction': '0'} # 关闭修正
+
+try:
+    with open(image_path, "rb") as image_file:
+        files = {'file': (image_path, image_file, 'image/jpeg')}
+        
+        response = requests.post(api_url, files=files, data=payload)
+        response.raise_for_status()
+
+        # 检查响应是否为图片
+        if 'image' in response.headers.get('Content-Type', ''):
+            with open(output_path, "wb") as f:
+                f.write(response.content)
+            print(f"成功生成结果图: {output_path}")
+        else:
+            # 如果不是图片, 说明可能返回了JSON错误信息
+            print("未能生成图片，服务器返回错误:")
+            print(response.json())
+
+except FileNotFoundError:
+    print(f"错误: 文件未找到 - {image_path}")
+except requests.exceptions.RequestException as e:
+    print(f"请求失败: {e}")
+</code></pre>
+                                    </div>
+                                    <div class="tab-pane fade" id="pills-java-generate" role="tabpanel">
+<pre><code class="language-java">// 需要添加 Apache HttpClient 依赖
+import org.apache.hc.client5.http.classic.methods.HttpPost;
+import org.apache.hc.client5.http.entity.mime.FileBody;
+import org.apache.hc.client5.http.entity.mime.MultipartEntityBuilder;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
+import org.apache.hc.client5.http.impl.classic.HttpClients;
+import org.apache.hc.core5.http.HttpEntity;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+
+public class GenerateImageApiClient {
+    public static void main(String[] args) throws IOException {
+        String apiUrl = "http://127.0.0.1:8000/api/generate_image";
+        String imagePath = "path/to/your/image.jpg";
+        String outputPath = "result.png";
+
+        try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
+            HttpPost uploadFile = new HttpPost(apiUrl);
+            
+            MultipartEntityBuilder builder = MultipartEntityBuilder.create();
+            builder.addPart("file", new FileBody(new File(imagePath)));
+            builder.addTextBody("use_correction", "0"); // 关闭修正
+            HttpEntity multipart = builder.build();
+            uploadFile.setEntity(multipart);
+
+            httpClient.execute(uploadFile, response -> {
+                System.out.println("Response status: " + response.getCode());
+                HttpEntity entity = response.getEntity();
+                
+                if (entity != null && response.getCode() == 200) {
+                    try (InputStream inputStream = entity.getContent();
+                         FileOutputStream fos = new FileOutputStream(new File(outputPath))) {
+                        
+                        byte[] buffer = new byte[8192];
+                        int bytesRead;
+                        while ((bytesRead = inputStream.read(buffer)) != -1) {
+                            fos.write(buffer, 0, bytesRead);
+                        }
+                        System.out.println("成功生成结果图: " + outputPath);
+                    }
+                } else {
+                    System.out.println("未能生成图片，服务器返回错误。");
+                }
+                return null;
+            });
+        }
+    }
+}
+</code></pre>
+                                    </div>
+                                    <div class="tab-pane fade" id="pills-js-generate" role="tabpanel">
+<pre><code class="language-javascript">// 在浏览器环境中使用 Fetch API
+const apiUrl = 'http://127.0.0.1:8000/api/generate_image';
+
+const fileInput = document.getElementById('fileInput'); // &lt;input type="file"&gt;
+const imageElement = document.getElementById('resultImage'); // &lt;img&gt;
+const errorElement = document.getElementById('error'); // &lt;div&gt;
+
+const imageFile = fileInput.files[0];
+
+if (imageFile) {
+    const formData = new FormData();
+    formData.append('file', imageFile);
+    formData.append('use_correction', '0'); // 关闭修正
+
+    fetch(apiUrl, {
+        method: 'POST',
+        body: formData,
+    })
+    .then(response => {
+        if (!response.ok) {
+            return response.json().then(err => { throw err; });
+        }
+        return response.blob(); // 获取图片Blob数据
+    })
+    .then(imageBlob => {
+        const imageUrl = URL.createObjectURL(imageBlob);
+        imageElement.src = imageUrl;
+        errorElement.textContent = '';
+    })
+    .catch(error => {
+        console.error('请求失败:', error);
+        imageElement.src = '';
+        errorElement.textContent = '错误: ' + (error.error || '无法生成图片');
+    });
+}
+</code></pre>
+                                    </div>
+                                </div>
+
+
+                                <h6 class="mt-4"><i class="bi bi-check-circle-fill text-success me-2"></i>成功响应</h6>
+                                <p>HTTP 状态码 <code>200 OK</code>，响应体为 PNG 图片的二进制数据 (<code>Content-Type: image/png</code>)。</p>
+
+                                <h6 class="mt-4"><i class="bi bi-x-circle-fill text-danger me-2"></i>失败响应</h6>
+                                <p>HTTP 状态码 <code>4xx</code> 或 <code>5xx</code>，响应体为 JSON 对象。</p>
+<pre><code class="language-json">{
+  "error": "错误描述信息 (例如: 未检测到人脸或图片人数超出限制)"
+}</code></pre>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="text-center text-muted py-4 mt-5">
+        <p>&copy; {{ current_year }} - {{ config.project_name or 'ArcFace Recognition System' }}</p>
+    </footer>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', (event) => {
+            document.querySelectorAll('pre code').forEach((el) => {
+                hljs.highlightElement(el);
+            });
+        });
+    </script>
+</body>
+</html> 
