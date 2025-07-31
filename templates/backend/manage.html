@@ -1,0 +1,1589 @@
+{% extends "_base.html" %}
+
+{% block styles %}
+    <link href="https://cdn.staticfile.net/select2/4.1.0-rc.0/css/select2.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdn.staticfile.net/select2-bootstrap-5-theme/1.3.0/select2-bootstrap-5-theme.min.css" />
+    <style>
+        .upload-area {
+            width: 680px;
+            height: 260px;
+            padding: 40px;
+            text-align: center;
+        }
+
+        #previewWrapper {
+            position: relative;
+            /* max-width: 24rem; */ /* Default width */
+            overflow: hidden; /* This is critical to contain the spotlight shadow */
+            border-radius: .75rem; /* Match the image border-radius */
+            /* transition: max-width 0.4s ease-in-out; */
+        }
+        #transformContainer {
+            position: relative;
+            transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+        /* --- New Target Acquisition Animation --- */
+        #target-scan-overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 10;
+            pointer-events: none;
+            display: none; /* Controlled by JS */
+        }
+        #target-box {
+            position: absolute;
+            border: 2px solid var(--primary-color);
+            box-shadow: 0 0 15px 3px var(--glow-primary);
+            transition: all 0.4s ease-in-out; /* Smooth transition for position and size */
+            border-radius: .25rem;
+        }
+        #target-box::before,
+        #target-box::after {
+            content: '';
+            position: absolute;
+            background: var(--primary-color);
+        }
+        /* Vertical crosshair line */
+        #target-box::before {
+            left: 50%;
+            transform: translateX(-50%);
+            width: 2px;
+            top: -15px;
+            bottom: -15px;
+        }
+        /* Horizontal crosshair line */
+        #target-box::after {
+            top: 50%;
+            transform: translateY(-50%);
+            height: 2px;
+            left: -15px;
+            right: -15px;
+        }
+
+        /* --- Layout Animation: Center to Left --- */
+        #previewColumn, #resultColumn {
+            /* Use a nice easing function for a "silky smooth" animation */
+            transition: transform 0.8s cubic-bezier(0.65, 0, 0.35, 1), opacity 0.6s cubic-bezier(0.65, 0, 0.35, 1);
+        }
+        .main-view.is-recognizing #resultColumn {
+            opacity: 0;
+            transform: translateX(50px); /* Slide out slightly to the right */
+            pointer-events: none;
+        }
+        .main-view.is-recognizing #previewColumn {
+            /* This value moves the preview to the center. It's half the width of the results column. */
+            transform: translateX(340px);
+        }
+        /* On smaller screens, the layout is stacked, so we don't need the horizontal shift */
+        @media (max-width: 991.98px) {
+            .main-view.is-recognizing #previewColumn {
+                transform: translateX(0);
+            }
+        }
+        /*
+        #previewWrapper.wide {
+            max-width: 36rem; 
+        }
+        */
+        #previewWrapper.active-dropzone {
+            cursor: pointer;
+        }
+        #previewWrapper.active-dropzone #previewImg {
+             border-color: var(--primary-color);
+             box-shadow: 0 0 25px -5px var(--glow-primary);
+        }
+        #previewImg {
+            display: block;
+            width: auto;
+            height: auto;
+            border-radius: .75rem;
+            box-shadow: 0 4px 8px var(--c-shadow), 0 10px 20px var(--c-shadow-lg);
+            border: 1px solid color-mix(in srgb, var(--c-border), transparent 50%);
+            transition: width 0.4s ease, height 0.4s ease;
+        }
+        #previewImg.aspect-normal {
+            width: 24rem;
+        }
+        #previewImg.aspect-wide {
+            width: 36rem;
+        }
+        #previewImg.aspect-tall {
+            height: 70vh;
+        }
+        #overlayCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+            border-radius: .75rem;
+            transition: all 0.2s ease;
+        }
+        
+        /* --- New Highlight Effect Styles --- */
+        #highlight-box {
+            position: absolute;
+            display: none;
+            pointer-events: none;
+            box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.55);
+            z-index: 5;
+            border: 2px solid rgba(0, 255, 255, 0.8);
+            transition: all 0.4s ease-in-out; /* Smooth transition for position, size, and transforms */
+        }
+
+        #highlight-box span {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        #highlight-box::before, /* Top */
+        #highlight-box::after,  /* Bottom */
+        #highlight-box span::before, /* Left */
+        #highlight-box span::after {  /* Right */
+            content: '';
+            position: absolute;
+            background: #00ffff;
+            box-shadow: 0 0 12px 2px #00ffff;
+            z-index: 6;
+        }
+
+        /* Vertical lines */
+        #highlight-box::before,
+        #highlight-box::after {
+            left: 50%;
+            width: 2px;
+            transform: translateX(-50%);
+        }
+
+        /* Horizontal lines */
+        #highlight-box span::before,
+        #highlight-box span::after {
+            top: 50%;
+            height: 2px;
+            transform: translateY(-50%);
+        }
+
+        /* Position them outside the box */
+        #highlight-box::before { /* Top */
+            bottom: 100%;
+            height: 9999px;
+        }
+        #highlight-box::after { /* Bottom */
+            top: 100%;
+            height: 9999px;
+        }
+        #highlight-box span::before { /* Left */
+            right: 100%;
+            width: 9999px;
+        }
+        #highlight-box span::after { /* Right */
+            left: 100%;
+            width: 9999px;
+        }
+
+        .result-column-container {
+            width: 680px;
+            max-width: 1000px;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity .5s ease-out, transform .5s ease-out;
+        }
+        .result-column-container.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .group-header {
+            font-weight: 500;
+            color: var(--c-text);
+            margin: 0 0 1rem 0;
+            padding-bottom: .75rem;
+            border-bottom: 1px solid var(--c-border);
+            opacity: 0;
+            animation: fadeInUp .5s ease-out forwards;
+        }
+
+        .face-card {
+            background: transparent; /* Card BG is now the group BG */
+            transition: transform 0.25s ease, box-shadow 0.25s ease;
+            border-radius: .75rem;
+            border: 0.1px solid color-mix(in srgb, var(--c-text), transparent 60%);
+            box-shadow: none;
+            opacity: 0;
+            transform: translateY(15px);
+            animation: fadeInUp .5s ease-out forwards;
+            height: 100%; /* Make cards in a row equal height */
+            min-width: 300px;
+            max-width: 600px;
+            width: 100%;
+        }
+        .face-card:hover {
+            transform: translateY(-5px) scale(1.02);
+            box-shadow: 0 8px 16px var(--c-shadow);
+            border-color: var(--accent-color);
+            background: var(--c-card);
+        }
+        .face-card-img-container {
+            flex-shrink: 0;
+            box-shadow: 0 4px 8px var(--c-shadow-lg);
+            border-radius: .5rem;
+        }
+        .face-card .progress {
+            background-color: color-mix(in srgb, var(--accent-color), transparent 85%);
+            height: 6px;
+            border-radius: 3px;
+        }
+        .face-card .progress-bar {
+            border-radius: 3px;
+        }
+
+        .main-view, #uploadWrapper {
+            transition: opacity .4s ease-out, transform .4s ease-out;
+        }
+        .main-view {
+            flex-grow: 1; /* Ensure it takes up available space for sticky to work */
+        }
+        .hidden {
+            display: none !important;
+        }
+        @keyframes fadeInUp {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        @keyframes fadeIn {
+            to { opacity: 1; }
+        }
+
+        /* 2. Cool scanning effect */
+        #scanLine {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 3px;
+            background: var(--accent-color);
+            box-shadow: 0 0 15px 1px var(--glow-accent);
+            display: none; /* Controlled by .active class */
+            z-index: 10;
+            border-radius: 3px;
+        }
+        #scanLine.active {
+            display: block;
+            animation: scanMove 2.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+        }
+        @keyframes scanMove {
+            from { top: 0%; }
+            to { top: calc(100% - 3px); }
+        }
+
+        #resultContainer {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem; /* Space between groups */
+        }
+        
+        .result-group {
+            background: color-mix(in srgb, var(--c-card), transparent 50%);
+            backdrop-filter: blur(12px);
+            border-radius: .75rem;
+            padding: 1.25rem;
+            border: 1px solid color-mix(in srgb, var(--c-border), transparent 50%);
+            box-shadow: 0 4px 12px var(--c-shadow);
+            transition: all 0.25s ease-in-out;
+        }
+
+        .result-group:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 24px var(--c-shadow-lg), 0 0 20px -5px var(--glow-primary);
+            border-color: var(--primary-color);
+        }
+
+        [data-theme="dark"] .face-card:hover {
+             box-shadow: 0 8px 16px var(--c-shadow-lg), 0 0 25px -5px var(--glow-accent);
+        }
+
+        /* Toast Notifications */
+        .toast {
+            background-color: color-mix(in srgb, var(--c-card), transparent 20%);
+            backdrop-filter: blur(10px);
+            border: 1px solid color-mix(in srgb, var(--c-card), transparent 70%);
+            box-shadow: 0 4px 12px var(--c-shadow-lg);
+            border-radius: .75rem;
+        }
+        .toast-header {
+            background-color: transparent;
+            border-bottom-color: color-mix(in srgb, var(--c-card), transparent 80%);
+            color: var(--c-text);
+        }
+        /* Custom dropdown for character selection with images */
+        .character-dropdown .dropdown-item {
+            display: flex;
+            align-items: center;
+        }
+        .character-dropdown .dropdown-item img {
+            width: 40px;
+            height: 40px;
+            object-fit: cover;
+            border-radius: .25rem;
+            margin-right: 10px;
+        }
+
+        /* FAB --- New Styles */
+        .fab-container {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            z-index: 1050;
+        }
+        .fab-custom {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(45deg, var(--accent-color), var(--primary-color));
+            border: none;
+            border-radius: 50%;
+            color: white;
+            font-size: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2), 0 0 20px var(--glow-primary);
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+        .fab-custom:hover {
+            transform: scale(1.1) rotate(15deg);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3), 0 0 30px var(--glow-accent);
+            cursor: pointer;
+        }
+        .fab-custom:active {
+            transform: scale(0.95);
+        }
+
+        .character-select-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 1rem;
+        }
+        .character-select-card {
+            cursor: pointer;
+            border: 2px solid transparent;
+            border-radius: .5rem;
+            padding: .5rem;
+            text-align: center;
+            transition: all 0.2s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .character-select-card:hover {
+            background-color: var(--c-bg);
+            border-color: var(--primary-color);
+        }
+        .character-select-card img {
+            width: 96px;
+            height: 96px;
+            object-fit: cover;
+            border-radius: .25rem;
+            margin-bottom: .5rem;
+        }
+        /* 省略号样式 */
+        .face-card .truncate {
+            width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            display: block;
+        }
+        .face-card .flex-grow-1 {
+            min-width: 0;
+            max-width: 320px;
+        }
+        /* Sticky Preview Container */
+        .sticky-preview {
+            position: -webkit-sticky;
+            position: sticky;
+            top: 5.8rem; /* Adjust to match page padding */
+            align-self: start; /* Aligns to the top of the flex container */
+            height: fit-content; /* Prevents the column from stretching */
+        }
+        /* 手机端适配 */
+        @media (max-width: 991.98px) { /* Corresponds to Bootstrap's 'lg' breakpoint */
+          .sticky-preview {
+              position: static;
+          }
+        }
+        @media (max-width: 767.98px) {
+          .upload-area {
+            width: 90vw !important;
+            min-width: unset !important;
+            height: 180px;
+            padding: 32px 12px !important;
+            margin: 0 auto 24px auto !important;
+            border-radius: 1.2rem !important;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+          }
+          #mainView, .main-view {
+            padding: 0 !important;
+            margin: 0 !important;
+            width: 100vw !important;
+            min-height: 60vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+          }
+          #previewWrapper {
+            width: 80vw !important;
+            margin: 0 auto 18px auto !important;
+            border-radius: 1.2rem !important;
+            overflow: hidden;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.10);
+            background: var(--c-card, #fff);
+            position: relative;
+            top: 18px;
+          }
+          #transformContainer {
+            border-radius: 1.2rem !important;
+          }
+          #previewImg {
+            width: 100% !important;
+            height: auto !important;
+            border-radius: 1.2rem !important;
+            display: block;
+          }
+          #overlayCanvas {
+            border-radius: 1.2rem !important;
+          }
+          #resultColumn, .result-column-container {
+            width: 100vw !important;
+            max-width: 90vw !important;
+            margin: 0 auto !important;
+            padding: 0 8px !important;
+          }
+          #resultContainer {
+            gap: 1rem !important;
+          }
+          .result-group, .frosted-glass-card {
+            border-radius: 0.5rem !important;
+            padding: 1rem !important;
+            margin-bottom: 1rem !important;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+          }
+          .face-card {
+            min-width: unset !important;
+            max-width: unset !important;
+            width: 100% !important;
+            border-radius: 0.5rem !important;
+            margin-bottom: 1rem !important;
+            padding: 1rem !important;
+            font-size: 1.05rem !important;
+          }
+          .face-card-img-container img {
+            width: 48px !important;
+            height: 48px !important;
+          }
+          .group-header {
+            font-size: 1.1rem !important;
+            padding-bottom: .5rem !important;
+            margin-bottom: .5rem !important;
+          }
+          .row.g-3, .row.flex-lg-nowrap {
+            flex-direction: column !important;
+            gap: 0 !important;
+          }
+          .col-lg-auto, .col-xl-6 {
+            width: 100% !important;
+            max-width: 100% !important;
+            margin-top: 6px;
+          }
+          .toast-container {
+            right: 0 !important;
+            left: 0 !important;
+            bottom: 0 !important;
+            width: 100vw !important;
+            padding: 0.5rem !important;
+          }
+          .toast {
+            width: 95vw !important;
+            max-width: 95vw !important;
+            margin: 0 auto !important;
+            border-radius: 1rem !important;
+          }
+          /* 浮动按钮适配 */
+          .fab-container {
+            right: 1.2rem !important;
+            bottom: 1.2rem !important;
+          }
+          .fab-custom {
+            width: 48px !important;
+            height: 48px !important;
+            font-size: 22px !important;
+          }
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+    <div id="uploadWrapper" class="d-flex flex-column align-items-center justify-content-center flex-grow-1">
+        <form id="uploadForm" class="upload-area d-flex flex-column align-items-center justify-content-center gap-3 frosted-glass-card">
+            <input type="file" id="imageFile" accept="image/*" class="d-none" required />
+            <svg xmlns="http://www.w3.org/2000/svg" width="56" height="56" fill="currentColor" class="bi bi-cloud-arrow-up" viewBox="0 0 16 16">
+                <path fill-rule="evenodd" d="M7.646 5.146a.5.5 0 0 1 .708 0l2 2a.5.5 0 0 1-.708.708L8.5 6.707V10.5a.5.5 0 0 1-1 0V6.707L6.354 7.854a.5.5 0 1 1-.708-.708l2-2z"/>
+                <path fill-rule="evenodd" d="M4.406 3.342A5.53 5.53 0 0 1 8 0c2.69 0 4.923 2 5.166 4.579C14.758 4.804 16 6.137 16 7.773 16 9.569 14.502 11 12.687 11H10.5a.5.5 0 0 1 0-1h2.188C13.938 10 15 8.981 15 7.773c0-1.216-1.02-2.228-2.313-2.228h-.5v-.5C12.188 2.825 10.328 1 8 1a4.53 4.53 0 0 0-4.242 3.22c-.226.66-.468 1.359-.732 2.028C2.7 6.45 2.5 7.009 2.5 7.5c0 1.065.865 2 2.22 2h1.03a.5.5 0 0 1 0 1H4.72C2.01 10.5 0 8.544 0 6.314 0 4.894 1.053 3.65 2.458 3.235c.29-.08.578-.17.857-.268z"/>
+            </svg>
+            <p class="text-muted m-0">拖拽图片到此或点击选择</p>
+        </form>
+    </div>
+
+    <!-- Main view: animated transition -->
+    <div class="main-view hidden" id="mainView">
+        <div id="mainViewContent" class="p-4">
+            <div class="row flex-lg-nowrap justify-content-center align-items-start w-100">
+                <div id="previewColumn" class="col-lg-auto mb-4 mb-lg-0 sticky-preview">
+                    <div id="previewWrapper">
+                        <div id="transformContainer">
+                            <img id="previewImg" src="" alt="preview" />
+                            <canvas id="overlayCanvas"></canvas>
+                            <div id="highlight-box"><span></span></div>
+                        </div>
+                        <div id="target-scan-overlay">
+                            <div id="target-box"></div>
+                        </div>
+                    </div>
+                </div>
+                <div id="resultColumn" class="col-lg-auto result-column-container">
+                    <div id="resultContainer"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Floating Action Button -->
+    <div class="fab-container">
+        <button id="updateDbBtn" class="fab-custom" title="添加或更新数据">
+            <i class="bi bi-plus-lg"></i>
+        </button>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 1100"></div>
+
+    {% include 'backend/_db_update_preview.html' %}
+
+    <!-- Upload Sample Modal -->
+    <div class="modal fade" id="uploadSampleModal" tabindex="-1" aria-labelledby="uploadSampleModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="uploadSampleModalLabel">修正并补充样本</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="modalImageData">
+                    <div class="row">
+                        <div class="col-md-4 text-center">
+                            <h6>待分配样本</h6>
+                            <img id="modalSampleImage" src="" class="img-fluid rounded shadow-sm mb-3" style="width: 256px; height: auto;">
+                        </div>
+                        <div class="col-md-8">
+                            <div class="mb-3">
+                                <label for="uploadModeSelect" class="form-label fw-bold">1. 选择上传模式</label>
+                                <select class="form-select" id="uploadModeSelect">
+                                    <option value="existing" selected>补充已有角色</option>
+                                    <option value="new">创建新角色</option>
+                                </select>
+                            </div>
+
+                            <!-- Fields for existing characters -->
+                            <div id="existingCharacterFields">
+                                <h6 class="mt-3">2. 选择正确角色</h6>
+                                <div class="mb-3">
+                                    <label for="modalAnimeSelect" class="form-label">a. 选择动漫</label>
+                                    <select class="form-select" id="modalAnimeSelect">
+                                        <option selected disabled>请先选择动漫...</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">b. 选择角色</label>
+                                    <div id="modalCharacterSelectionDisplay" class="d-none">
+                                        <div class="border rounded p-2 d-flex align-items-center">
+                                            <img id="selectedCharImg" src="" class="rounded me-3" width="40" height="40" style="object-fit: cover;">
+                                            <span id="selectedCharName" class="fw-bold"></span>
+                                            <button id="changeCharBtn" type="button" class="btn btn-sm btn-outline-secondary ms-auto">更改</button>
+                                        </div>
+                                    </div>
+                                    <div id="modalCharacterList" class="border rounded p-3 character-select-grid" style="max-height: 350px; overflow-y: auto;">
+                                        <small class="text-muted">请先选择动漫</small>
+                                    </div>
+                                </div>
+                            </div>
+
+                             <!-- Fields for new characters -->
+                            <div id="newCharacterFields" class="d-none">
+                                <h6 class="mt-3">2. 填写新角色信息</h6>
+                                <div class="mb-3">
+                                    <label for="modalNewAnimeSelect" class="form-label">a. 选择所属动漫</label>
+                                    <select class="form-select" id="modalNewAnimeSelect"></select>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="modalNewCharacterName" class="form-label">b. 输入新角色名称</label>
+                                    <input type="text" class="form-control" id="modalNewCharacterName" placeholder="例如：漩涡鸣人">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="modalUploadSpinner" class="d-none mt-3 text-center">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">正在上传...</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" id="modalUploadBtn" disabled>确认并上传</button>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block scripts %}
+    <script id="app-config"
+        data-animation-speed-random="{{ config.animation_speed_random }}"
+        data-animation-speed-target="{{ config.animation_speed_target }}"
+        data-enable-upload-compression="{{ config.get('enable_upload_compression', True) | tojson }}">
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.1.0-rc.0/js/select2.min.js"></script>
+    <script>
+    $(function() {
+        const configElement = document.getElementById('app-config');
+        const animationSpeedRandom = parseInt(configElement.dataset.animationSpeedRandom, 10);
+        const animationSpeedTarget = parseInt(configElement.dataset.animationSpeedTarget, 10);
+        const enableUploadCompression = configElement.dataset.enableUploadCompression === 'true';
+        
+
+        const uploadWrapper = document.getElementById("uploadWrapper");
+        const uploadForm = document.getElementById("uploadForm");
+        const imageFile = document.getElementById("imageFile");
+        const previewImg = document.getElementById("previewImg");
+        const previewWrapper = document.getElementById('previewWrapper');
+        const transformContainer = document.getElementById('transformContainer');
+        const overlayCanvas = document.getElementById("overlayCanvas");
+        const mainView = document.getElementById("mainView");
+        const resultContainer = document.getElementById("resultContainer");
+        const resultColumn = document.getElementById("resultColumn");
+        const pageContainer = document.getElementById("pageContainer");
+        const toastContainer = document.querySelector('.toast-container');
+        // Modal elements
+        const uploadSampleModal = new bootstrap.Modal(document.getElementById('uploadSampleModal'));
+        const modalImageData = document.getElementById('modalImageData');
+        const modalSampleImage = document.getElementById('modalSampleImage');
+        const modalAnimeSelect = document.getElementById('modalAnimeSelect');
+        const modalCharacterList = document.getElementById('modalCharacterList');
+        const modalCharacterSelectionDisplay = document.getElementById('modalCharacterSelectionDisplay');
+        const selectedCharImg = document.getElementById('selectedCharImg');
+        const selectedCharName = document.getElementById('selectedCharName');
+        const changeCharBtn = document.getElementById('changeCharBtn');
+        const modalUploadBtn = document.getElementById('modalUploadBtn');
+        const modalUploadSpinner = document.getElementById('modalUploadSpinner');
+        
+        // New elements for the modal refactor
+        const uploadModeSelect = document.getElementById('uploadModeSelect');
+        const existingCharacterFields = document.getElementById('existingCharacterFields');
+        const newCharacterFields = document.getElementById('newCharacterFields');
+        const modalNewAnimeSelect = document.getElementById('modalNewAnimeSelect');
+        const modalNewCharacterName = document.getElementById('modalNewCharacterName');
+        
+        let selectedCharacterIdForUpload = null;
+
+        let currentFaces = [];
+        let originalImageFile = null;
+        let compressedFileToUpload = null;
+        let targetingInterval = null;
+        let isScanning = false;
+        let detectedFaceBoxes = [];
+
+        // The global showToast function is now available from toast.js
+
+        /**
+         * Compresses an image file before uploading.
+         * @param {File} file The original image file.
+         * @returns {Promise<Blob>} A promise that resolves with the compressed image as a Blob.
+         */
+        function compressImage(file) {
+            return new Promise((resolve, reject) => {
+                const MAX_DIMENSION = 1920; // Max width or height
+                const QUALITY = 0.85;
+
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        let width = img.width;
+                        let height = img.height;
+
+                        if (width > height) {
+                            if (width > MAX_DIMENSION) {
+                                height *= MAX_DIMENSION / width;
+                                width = MAX_DIMENSION;
+                            }
+                        } else {
+                            if (height > MAX_DIMENSION) {
+                                width *= MAX_DIMENSION / height;
+                                height = MAX_DIMENSION;
+                            }
+                        }
+
+                        const canvas = document.createElement('canvas');
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+
+                        canvas.toBlob(
+                            (blob) => {
+                                if (blob) {
+                                    console.log(`Image compressed from ${Math.round(file.size / 1024)} KB to ${Math.round(blob.size / 1024)} KB.`);
+                                    resolve(blob);
+                                } else {
+                                    reject(new Error('Canvas to Blob conversion failed.'));
+                                }
+                            },
+                            'image/jpeg',
+                            QUALITY
+                        );
+                    };
+                    img.onerror = (err) => reject(err);
+                    img.src = event.target.result;
+                };
+                reader.onerror = (err) => reject(err);
+                reader.readAsDataURL(file);
+            });
+        }
+
+        // --- All Upload Logic ---
+        function setupUploadListeners(element, isClickable = true) {
+            if (isClickable) {
+                element.addEventListener("click", () => imageFile.click());
+            }
+
+            ["dragenter", "dragover"].forEach(evt => {
+                element.addEventListener(evt, e => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const targetElement = element.id === 'previewWrapper' ? uploadForm : element;
+                    targetElement.classList.add("dragover");
+                     if (element.id === 'previewWrapper') {
+                        element.classList.add('active-dropzone');
+                    }
+                });
+            });
+            ["dragleave", "drop"].forEach(evt => {
+                element.addEventListener(evt, e => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const targetElement = element.id === 'previewWrapper' ? uploadForm : element;
+                    targetElement.classList.remove("dragover");
+                    if (element.id === 'previewWrapper') {
+                        element.classList.remove('active-dropzone');
+                    }
+                });
+            });
+            element.addEventListener("drop", e => {
+                imageFile.files = e.dataTransfer.files;
+                showPreviewAndSubmit();
+            });
+        }
+
+        // Setup listeners
+        setupUploadListeners(uploadForm); // Handles initial form
+        setupUploadListeners(previewWrapper, false); // Handles drag/drop on wrapper, but not click
+        previewImg.addEventListener("click", () => imageFile.click()); // Explicitly handle click on the image
+
+        imageFile.addEventListener("change", showPreviewAndSubmit);
+
+        // 新增：支持Ctrl+V粘贴图片自动识别
+        document.addEventListener('paste', function (event) {
+            if (event.clipboardData && event.clipboardData.items) {
+                for (let i = 0; i < event.clipboardData.items.length; i++) {
+                    const item = event.clipboardData.items[i];
+                    if (item.kind === 'file' && item.type.startsWith('image/')) {
+                        const file = item.getAsFile();
+                        if (file) {
+                            // 将图片文件赋值给input并触发识别
+                            const dataTransfer = new DataTransfer();
+                            dataTransfer.items.add(file);
+                            imageFile.files = dataTransfer.files;
+                            showPreviewAndSubmit();
+                            event.preventDefault();
+                            break;
+                        }
+                    }
+                }
+            }
+        });
+
+        async function showPreviewAndSubmit() {
+            if (!imageFile.files.length) return;
+            
+            // Reset any active hover/zoom effects from the previous result
+            transformContainer.style.transform = 'scale(1) translate(0px, 0px)';
+            const highlightBox = document.getElementById('highlight-box');
+            if (highlightBox) {
+                highlightBox.style.display = 'none';
+            }
+            
+            currentFaces = [];
+            originalImageFile = imageFile.files[0];
+            compressedFileToUpload = null; // Reset compressed file
+            const ctx = overlayCanvas.getContext("2d");
+            ctx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+            resultContainer.innerHTML = "";
+            resultColumn.classList.remove("visible");
+            
+            mainView.classList.add('is-recognizing'); // Add class to start centering animation
+            uploadWrapper.classList.add('hidden');
+            
+            if (enableUploadCompression) {
+                try {
+                    compressedFileToUpload = await compressImage(originalImageFile);
+                } catch (err) {
+                    console.error('Compression error:', err);
+                    compressedFileToUpload = originalImageFile;
+                }
+            } else {
+                compressedFileToUpload = originalImageFile;
+            }
+
+            const fileURL = URL.createObjectURL(compressedFileToUpload);
+            previewImg.src = fileURL;
+            
+            mainView.classList.remove('hidden');
+
+            previewImg.onload = () => {
+                // Adjust width for wide images
+                const ratio = previewImg.naturalWidth / previewImg.naturalHeight;
+                previewImg.className = 'rounded-2'; // Reset classes first
+                if (ratio > 1.2) {
+                    previewImg.classList.add('aspect-wide');
+                } else if (ratio < 0.85) {
+                    previewImg.classList.add('aspect-tall');
+                } else {
+                    previewImg.classList.add('aspect-normal');
+                }
+                
+                resizeCanvas();
+                showToast('图片加载成功，即将开始识别...', 'info', 2000);
+                handleSubmit();
+            };
+        }
+
+        function resizeCanvas() {
+            overlayCanvas.width = previewImg.clientWidth;
+            overlayCanvas.height = previewImg.clientHeight;
+            drawBoxes(currentFaces); // Redraw boxes on resize
+        }
+        window.addEventListener("resize", resizeCanvas);
+
+        async function handleSubmit() {
+            resultContainer.innerHTML = "";
+            resultColumn.classList.remove("visible");
+            
+            // Activate scanning animation
+            isScanning = true;
+            detectedFaceBoxes = [];
+            startScanAnimation(); // Start with random scanning
+            const startTime = performance.now(); // Start timer
+
+            let fileToUpload = originalImageFile;
+            if (enableUploadCompression) {
+                try {
+                    fileToUpload = await compressImage(originalImageFile);
+                } catch (err) {
+                    console.error('Compression error:', err);
+                    fileToUpload = originalImageFile; // Fallback
+                }
+            } 
+
+
+            const formData = new FormData();
+            // Use the (potentially compressed) file for upload
+            formData.append("file", fileToUpload, originalImageFile.name);
+            formData.append("stream_progress", "1"); // Request streaming response
+
+            try {
+                const response = await fetch("/api/recognize", {
+                    method: "POST",
+                    body: formData,
+                });
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || `请求失败，状态码: ${response.status}`);
+                }
+                
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let buffer = "";
+
+                while(true) {
+                    const { value, done } = await reader.read();
+                    if (done) break;
+
+                    buffer += decoder.decode(value, { stream: true });
+                    
+                    while (buffer.includes("\n\n")) {
+                        const messageEndIndex = buffer.indexOf("\n\n");
+                        const message = buffer.substring(0, messageEndIndex);
+                        buffer = buffer.substring(messageEndIndex + 2);
+
+                        let eventType = 'message';
+                        let data = '';
+
+                        message.split('\n').forEach(line => {
+                            if (line.startsWith('event:')) {
+                                eventType = line.substring(7).trim();
+                            } else if (line.startsWith('data:')) {
+                                data = line.substring(5).trim();
+                            }
+                        });
+                        
+                        if (data) {
+                           const jsonData = JSON.parse(data);
+                            if (eventType === 'detected') {
+                                handleDetectedEvent(jsonData);
+                            } else if (eventType === 'completed') {
+                                const duration = ((performance.now() - startTime) / 1000).toFixed(2);
+                                await handleCompletedEvent(jsonData, duration);
+                            } else if (eventType === 'error') {
+                                handleErrorEvent(jsonData);
+                            }
+                        }
+                    }
+                }
+
+            } catch (err) {
+                console.error(err);
+                resultColumn.classList.add("visible");
+                resultContainer.innerHTML = `<p class='text-danger text-center mt-4'>${err.message}</p>`;
+                showToast(err.message, 'danger');
+                stopScanAnimation();
+                isScanning = false;
+                mainView.classList.remove('is-recognizing');
+            }
+        }
+        
+        function handleDetectedEvent(data) {
+            detectedFaceBoxes = data.boxes || [];
+            if (detectedFaceBoxes.length > 0) {
+                startScanAnimationOnFaces();
+            }
+        }
+
+        async function handleCompletedEvent(data, duration) {
+            currentFaces = data.faces || [];
+            await renderResult(currentFaces);
+            resultColumn.classList.add("visible");
+            showToast(`识别完成！耗时 ${duration} 秒，共找到 ${currentFaces.length} 张人脸。`, 'success');
+            stopScanAnimation();
+            isScanning = false;
+            mainView.classList.remove('is-recognizing');
+        }
+
+        function handleErrorEvent(data) {
+            const errorMessage = data.error || "发生未知错误";
+            resultColumn.classList.add("visible");
+            resultContainer.innerHTML = `<p class='text-danger text-center mt-4'>${errorMessage}</p>`;
+            showToast(errorMessage, 'danger');
+            stopScanAnimation();
+            isScanning = false;
+            mainView.classList.remove('is-recognizing');
+        }
+
+
+        function startScanAnimation() {
+            if (targetingInterval) clearInterval(targetingInterval);
+            const highlightBox = document.getElementById('highlight-box');
+            if (!highlightBox) return;
+
+            highlightBox.style.display = 'block';
+
+            const moveAndResizeBox = () => {
+                const containerW = previewImg.clientWidth;
+                const containerH = previewImg.clientHeight;
+
+                // Set size constraints for the box
+                const minSize = Math.min(containerW, containerH) * 0.15;
+                const maxSize = Math.min(containerW, containerH) * 0.35;
+                
+                const newSize = Math.random() * (maxSize - minSize) + minSize;
+                
+                const newX = Math.random() * (containerW - newSize);
+                const newY = Math.random() * (containerH - newSize);
+
+                highlightBox.style.width = `${newSize}px`;
+                highlightBox.style.height = `${newSize}px`;
+                highlightBox.style.left = `${newX}px`;
+                highlightBox.style.top = `${newY}px`;
+            };
+            
+            moveAndResizeBox(); // Initial position
+            targetingInterval = setInterval(moveAndResizeBox, animationSpeedRandom);
+        }
+
+        function startScanAnimationOnFaces() {
+            if (targetingInterval) clearInterval(targetingInterval);
+            if (detectedFaceBoxes.length === 0) {
+                startScanAnimation(); // Fallback to random if no faces
+                return;
+            }
+
+            const highlightBox = document.getElementById('highlight-box');
+            if (!highlightBox) return;
+
+            highlightBox.style.display = 'block';
+            let currentFaceIndex = 0;
+
+            const moveToFace = () => {
+                const box = detectedFaceBoxes[currentFaceIndex];
+                const scaleX = previewImg.clientWidth / previewImg.naturalWidth;
+                const scaleY = previewImg.clientHeight / previewImg.naturalHeight;
+                const [x1, y1, x2, y2] = box;
+                
+                const boxWidth = (x2 - x1) * scaleX;
+                const boxHeight = (y2 - y1) * scaleY;
+                const boxX = x1 * scaleX;
+                const boxY = y1 * scaleY;
+
+                highlightBox.style.width = `${boxWidth}px`;
+                highlightBox.style.height = `${boxHeight}px`;
+                highlightBox.style.left = `${boxX}px`;
+                highlightBox.style.top = `${boxY}px`;
+
+                currentFaceIndex = (currentFaceIndex + 1) % detectedFaceBoxes.length;
+            };
+
+            moveToFace(); // Initial position
+            targetingInterval = setInterval(moveToFace, animationSpeedTarget); // Slower interval for deliberate scanning
+        }
+
+        function stopScanAnimation() {
+            if (targetingInterval) clearInterval(targetingInterval);
+            targetingInterval = null;
+            const highlightBox = document.getElementById('highlight-box');
+            if (highlightBox) {
+                highlightBox.style.display = 'none';
+            }
+        }
+
+        function drawBoxes(faces, highlightedIndex = -1) {
+            const ctx = overlayCanvas.getContext("2d");
+            ctx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+
+            if (!faces.length) return;
+
+            const scaleX = previewImg.clientWidth / previewImg.naturalWidth;
+            const scaleY = previewImg.clientHeight / previewImg.naturalHeight;
+            
+            faces.forEach((f, index) => {
+                const [x1, y1, x2, y2] = f.bounding_box;
+                const isHighlighted = index === highlightedIndex;
+
+                ctx.strokeStyle = isHighlighted ? 'var(--glow-accent)' : 'var(--primary-color)';
+                ctx.lineWidth = isHighlighted ? 3 : 2;
+                if (isHighlighted) {
+                    ctx.shadowColor = 'var(--glow-accent)';
+                    ctx.shadowBlur = 10;
+                }
+                ctx.strokeRect(x1 * scaleX, y1 * scaleY, (x2 - x1) * scaleX, (y2 - y1) * scaleY);
+                ctx.shadowColor = 'transparent'; // Reset shadow for next loop
+                ctx.shadowBlur = 0;
+            });
+        }
+
+        async function renderResult(faces) {
+            resultContainer.innerHTML = "";
+            drawBoxes(faces);
+
+            if (!faces.length) {
+                resultContainer.innerHTML = "<p class='text-muted text-center mt-4'>未检测到人脸</p>";
+                return;
+            }
+
+            // IMPORTANT: Create an Image object from the ORIGINAL file for high-quality cropping
+            const imageForCropping = new Image();
+            imageForCropping.src = URL.createObjectURL(originalImageFile);
+            await new Promise(resolve => imageForCropping.onload = resolve);
+
+            // Calculate scaling factors between original and displayed (compressed) image
+            const originalWidth = imageForCropping.naturalWidth;
+            const originalHeight = imageForCropping.naturalHeight;
+            const displayedWidth = previewImg.naturalWidth;
+            const displayedHeight = previewImg.naturalHeight;
+            
+            const scaleX = originalWidth / displayedWidth;
+            const scaleY = originalHeight / displayedHeight;
+
+            const groups = {};
+            faces.forEach(f => {
+                const key = f.identity === "未知角色" ? "未知角色" : f.anime || "未知作品";
+                if (!groups[key]) {
+                    groups[key] = { faces: [], maxScore: 0 };
+                }
+                groups[key].faces.push(f);
+                if (f.score > groups[key].maxScore) groups[key].maxScore = f.score;
+            });
+            
+            const groupNames = Object.keys(groups).sort((a, b) => {
+                if (a === "未知角色") return 1;
+                if (b === "未知角色") return -1;
+                return groups[b].faces.length - groups[a].faces.length;
+            });
+
+            let animationDelay = 0;
+            groupNames.forEach(groupName => {
+                const groupWrapper = document.createElement('div');
+                groupWrapper.className = 'result-group frosted-glass-card p-3 mb-3';
+                
+                const header = document.createElement('h5');
+                header.className = 'group-header';
+                header.textContent = groupName;
+                header.style.animationDelay = `${animationDelay}ms`;
+                groupWrapper.appendChild(header);
+                animationDelay += 100;
+                
+                const cardsContainer = document.createElement('div');
+                cardsContainer.className = 'row g-3'; /* From vertical list to horizontal grid */
+                
+                const facesArr = groups[groupName].faces.sort((a, b) => b.score - a.score);
+                
+                facesArr.forEach(f => {
+                    const originalIndex = faces.indexOf(f);
+                    const col = document.createElement("div");
+                    col.className = "col-xl-6"; /* 2 columns on extra large screens, stacks on smaller */
+                    
+                    const scoreNum = parseFloat(f.score) || 0;
+                    const percent = Math.round(scoreNum * 100);
+                    const colorClass = percent >= 80 ? 'bg-success' : percent >= 60 ? 'bg-info' : 'bg-warning';
+                    
+                    let correctionTagHTML = '';
+                    if (f.is_corrected) {
+                        correctionTagHTML = `<div class='text-danger small mt-1'>*已由全局分析修正</div>`;
+                    }
+
+                    let orientationTagHTML = '';
+                    if (f.first_class === 0) {
+                        orientationTagHTML = `<span class='text-success fw-bold me-1'>(正)</span>`;
+                    } else if (f.first_class === 1) {
+                        orientationTagHTML = `<span class='text-info fw-bold me-1'>(背)</span>`;
+                    }
+
+                    const uploadBtnHtml = `
+                        <button class="btn btn-sm btn-outline-primary ms-auto upload-sample-btn" 
+                                data-char-id="${f.identity}" 
+                                data-char-name="${f.name}">
+                            <i class="bi bi-upload"></i>
+                        </button>`;
+                    
+                    const imageId = `face-img-${originalIndex}`;
+
+                    const cardHTML = `
+                        <div class="face-card p-3" data-face-index="${originalIndex}" style="animation-delay: ${animationDelay}ms;">
+                            <div class="d-flex align-items-center">
+                                <div class="face-card-img-container me-3">
+                                    <img id="${imageId}" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" width="64" height="64" class="rounded-2" style="object-fit: cover;">
+                                </div>
+                                <div class="flex-grow-1" style="min-width: 0;">
+                                    <div class="d-flex align-items-baseline w-100">
+                                        ${orientationTagHTML}
+                                        <h6 class='fw-bold mb-0 text-truncate' title="${f.name}">${f.name}</h6>
+                                    </div>
+                                    ${correctionTagHTML}
+                                    <p class='small text-muted mb-0 mt-1 text-truncate' title="${f.anime}">${f.anime}</p>
+                                </div>
+                                ${uploadBtnHtml}
+                            </div>
+                            <div class="mt-3">
+                                <div class='small text-muted d-flex justify-content-between mb-1'>
+                                    <span>置信度</span>
+                                    <span>${percent}%</span>
+                                </div>
+                                <div class="progress">
+                                    <div class="progress-bar ${colorClass}" role="progressbar" style="width:${percent}%" aria-valuenow="${percent}"></div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    
+                    col.innerHTML = cardHTML;
+                    cardsContainer.appendChild(col);
+
+                    // --- SCALED CROPPING ---
+                    // The coordinates from server (f.recognition_box) are for the compressed image.
+                    // We must scale them to crop from the high-resolution original `imageForCropping`.
+                    const scaledRecBox = f.recognition_box.map((v, i) => i % 2 === 0 ? v * scaleX : v * scaleY);
+
+                    // Crop for display (with padding) from the original high-res image
+                    cropFaceFromImage(imageForCropping, scaledRecBox, 112, 112).then(dataUrl => {
+                        const imgElement = document.getElementById(imageId);
+                        if (imgElement) {
+                            imgElement.src = dataUrl;
+                        }
+                    });
+                    
+                    const scaledBoundingBox = f.bounding_box.map((v, i) => i % 2 === 0 ? v * scaleX : v * scaleY);
+                    const scaledResolution = [f.resolution[0] * scaleX, f.resolution[1] * scaleY];
+
+                    // Crop for upload (original, no padding) from the original high-res image
+                    cropFaceFromImage(imageForCropping, scaledBoundingBox, scaledResolution[0], scaledResolution[1]).then(dataUrl => {
+                        const b64DataOriginal = dataUrl.split(',')[1];
+                        const btn = col.querySelector('.upload-sample-btn');
+                        if(btn) {
+                            btn.dataset.b64Original = b64DataOriginal;
+                        }
+                    });
+
+                    animationDelay += 80;
+                });
+                
+                groupWrapper.appendChild(cardsContainer);
+                resultContainer.appendChild(groupWrapper);
+            });
+
+            // Add hover listeners to specific elements
+            document.querySelectorAll('.face-card').forEach(card => {
+                const index = parseInt(card.dataset.faceIndex, 10);
+                const faceData = faces[index];
+                
+                const elementsToHover = card.querySelectorAll('.face-card-img-container, h6.fw-bold');
+
+                const showHighlight = () => {
+                    if (isScanning) return; // Don't show hover effect during scan animation
+                    const highlightBox = document.getElementById('highlight-box');
+                    const overlayCanvas = document.getElementById('overlayCanvas');
+                    if (highlightBox && faceData) {
+                        const scaleX = previewImg.clientWidth / previewImg.naturalWidth;
+                        const scaleY = previewImg.clientHeight / previewImg.naturalHeight;
+                        const [x1, y1, x2, y2] = faceData.bounding_box;
+
+                        const top = y1 * scaleY;
+                        const left = x1 * scaleX;
+                        const width = (x2 - x1) * scaleX;
+                        const height = (y2 - y1) * scaleY;
+
+                        highlightBox.style.cssText = `
+                            display: block;
+                            top: ${top}px;
+                            left: ${left}px;
+                            width: ${width}px;
+                            height: ${height}px;
+                        `;
+                    }
+                    drawBoxes(faces, index);
+
+                    // --- Zoom In Logic ---
+                    const zoomScale = 1.7;
+                    const transformOrigin = '0 0';
+
+                    const scaleX = previewImg.clientWidth / previewImg.naturalWidth;
+                    const scaleY = previewImg.clientHeight / previewImg.naturalHeight;
+
+                    const boxCenterX = ((faceData.bounding_box[0] + faceData.bounding_box[2]) / 2) * scaleX;
+                    const boxCenterY = ((faceData.bounding_box[1] + faceData.bounding_box[3]) / 2) * scaleY;
+                    
+                    const imgCenterX = previewImg.clientWidth / 2;
+                    const imgCenterY = previewImg.clientHeight / 2;
+
+                    const translateX = imgCenterX - (boxCenterX * zoomScale);
+                    const translateY = imgCenterY - (boxCenterY * zoomScale);
+
+                    const transformString = `scale(${zoomScale}) translate(${translateX / zoomScale}px, ${translateY / zoomScale}px)`;
+                    
+                    transformContainer.style.transformOrigin = transformOrigin;
+                    transformContainer.style.transform = transformString;
+                };
+
+                const hideHighlight = () => {
+                    if (isScanning) return; // Don't hide during scan animation
+                    const highlightBox = document.getElementById('highlight-box');
+                    if (highlightBox) {
+                        highlightBox.style.display = 'none';
+                    }
+                    drawBoxes(faces, -1);
+
+                    // --- Zoom Out Logic ---
+                    transformContainer.style.transform = 'scale(1) translate(0px, 0px)';
+                };
+
+                elementsToHover.forEach(el => {
+                    el.addEventListener('mouseenter', showHighlight);
+                    el.addEventListener('mouseleave', hideHighlight);
+                });
+
+            });
+            
+            // Add click listeners for the new upload buttons
+            document.querySelectorAll('.upload-sample-btn').forEach(button => {
+                button.addEventListener('click', event => {
+                    const card = event.currentTarget.closest('.face-card');
+                    const originalIndex = parseInt(card.dataset.faceIndex, 10);
+                    const faceData = currentFaces[originalIndex];
+                    
+                    const btn = event.currentTarget;
+                    const b64DataOriginal = btn.dataset.b64Original;
+
+                    if (!b64DataOriginal) {
+                        showToast('图片数据尚未准备好，请稍后重试。', 'warning');
+                        return;
+                    }
+                    
+                    // Store the ORIGINAL image data for upload, and use it for preview.
+                    modalImageData.value = b64DataOriginal;
+                    modalSampleImage.src = `data:image/png;base64,${b64DataOriginal}`;
+
+                    // Reset and populate modal
+                    resetAndPrepareModal();
+                    
+                    uploadSampleModal.show();
+                });
+            });
+        }
+        
+        async function cropFaceFromImage(image, box, targetWidth, targetHeight) {
+            const [x1, y1, x2, y2] = box;
+            const cropWidth = x2 - x1;
+            const cropHeight = y2 - y1;
+
+            if (cropWidth <= 0 || cropHeight <= 0) {
+                // Return a placeholder for invalid box dimensions
+                return "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
+            }
+
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+
+            // Special case: if target dimensions are the same as crop, don't pad
+            if (targetWidth === cropWidth && targetHeight === cropHeight) {
+                 canvas.width = targetWidth;
+                 canvas.height = targetHeight;
+                 ctx.drawImage(image, x1, y1, cropWidth, cropHeight, 0, 0, targetWidth, targetHeight);
+
+            } else {
+                 // --- Logic with padding ---
+                canvas.width = targetWidth;
+                canvas.height = targetHeight;
+                const ratio = Math.min(targetWidth / cropWidth, targetHeight / cropHeight);
+                const drawWidth = cropWidth * ratio;
+                const drawHeight = cropHeight * ratio;
+                const offsetX = (targetWidth - drawWidth) / 2;
+                const offsetY = (targetHeight - drawHeight) / 2;
+
+                ctx.fillStyle = 'black';
+                ctx.fillRect(0, 0, targetWidth, targetHeight);
+
+                ctx.drawImage(
+                    image,
+                    x1, y1, cropWidth, cropHeight,
+                    offsetX, offsetY, drawWidth, drawHeight
+                );
+            }
+            return canvas.toDataURL('image/png');
+        }
+        
+        // --- NEW MODAL LOGIC ---
+
+        function resetAndPrepareModal() {
+            modalUploadBtn.disabled = true;
+            selectedCharacterIdForUpload = null;
+            
+            // Reset fields
+            modalCharacterList.innerHTML = '<small class="text-muted">请先选择动漫</small>';
+            modalCharacterList.classList.remove('d-none');
+            modalCharacterSelectionDisplay.classList.add('d-none');
+            modalNewCharacterName.value = '';
+
+            // Set initial view based on mode
+            const isNewMode = uploadModeSelect.value === 'new';
+            existingCharacterFields.classList.toggle('d-none', isNewMode);
+            newCharacterFields.classList.toggle('d-none', !isNewMode);
+            
+            // Reusable function to populate select2 dropdowns
+            const populateAnimeSelect = (selectElement) => {
+                const select = $(selectElement);
+                select.select2({
+                    theme: 'bootstrap-5',
+                    dropdownParent: $('#uploadSampleModal'),
+                    placeholder: '正在加载动漫列表...',
+                }).empty();
+
+                // Fetch anime list and populate
+                fetch('/api/get_animes')
+                    .then(res => res.json())
+                    .then(animes => {
+                        select.append(new Option('请选择动漫...', '', true, true)).trigger('change');
+                        animes.forEach(anime => {
+                            const option = new Option(anime, anime);
+                            select.append(option);
+                        });
+                        select.trigger('change');
+                    })
+                    .catch(err => {
+                        select.empty().append(new Option('加载动漫列表失败', '', true, true)).trigger('change');
+                        showToast('无法加载动漫列表', 'danger');
+                    });
+            };
+
+            populateAnimeSelect(modalAnimeSelect);
+            populateAnimeSelect(modalNewAnimeSelect);
+        }
+
+        uploadModeSelect.addEventListener('change', () => {
+             const isNewMode = uploadModeSelect.value === 'new';
+             existingCharacterFields.classList.toggle('d-none', isNewMode);
+             newCharacterFields.classList.toggle('d-none', !isNewMode);
+             // Reset selections and disable button when mode changes
+             modalUploadBtn.disabled = true;
+             selectedCharacterIdForUpload = null;
+             modalNewCharacterName.value = '';
+        });
+
+        $('#modalAnimeSelect').on('change', async function() {
+            const animeName = this.value;
+
+            // Reset character selection on anime change
+            modalCharacterList.classList.remove('d-none');
+            modalCharacterSelectionDisplay.classList.add('d-none');
+            modalUploadBtn.disabled = true;
+            selectedCharacterIdForUpload = null;
+
+            if (!animeName) {
+                modalCharacterList.innerHTML = '<small class="text-muted">请先选择动漫</small>';
+                return;
+            }
+
+            modalCharacterList.innerHTML = '<div class="spinner-border spinner-border-sm" role="status"><span class="visually-hidden">Loading...</span></div>';
+            
+            try {
+                const res = await fetch(`/api/get_characters_by_anime?anime=${encodeURIComponent(animeName)}`);
+                const characters = await res.json();
+                modalCharacterList.innerHTML = '';
+                if (characters.length === 0) {
+                    modalCharacterList.innerHTML = '<small class="text-muted">该动漫下无角色</small>';
+                    return;
+                }
+                
+                characters.forEach(char => {
+                    const defaultImg = "data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1 1'%3e%3c/svg%3e";
+                    const charElement = document.createElement('div');
+                    charElement.className = 'character-select-card character-select-item';
+                    charElement.dataset.charId = char.id;
+                    charElement.dataset.charName = char.name;
+                    const imgSrc = char.preview_b64 ? 'data:image/jpeg;base64,'+char.preview_b64 : defaultImg;
+                    charElement.dataset.charImg = imgSrc;
+                    charElement.innerHTML = `
+                        <img src="${imgSrc}" class="rounded">
+                        <span class="small d-block text-truncate">${char.name}</span>
+                    `;
+                    charElement.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        
+                        // Set display
+                        selectedCharImg.src = this.dataset.charImg;
+                        selectedCharName.textContent = this.dataset.charName;
+                        
+                        // Show display, hide list
+                        modalCharacterSelectionDisplay.classList.remove('d-none');
+                        modalCharacterList.classList.add('d-none');
+
+                        // Store selection and enable upload button
+                        selectedCharacterIdForUpload = this.dataset.charId;
+                        modalUploadBtn.disabled = false;
+                    });
+                    modalCharacterList.appendChild(charElement);
+                });
+            } catch (err) {
+                modalCharacterList.innerHTML = '<small class="text-danger">加载角色失败</small>';
+                showToast('加载角色列表失败', 'danger');
+            }
+        });
+
+        changeCharBtn.addEventListener('click', () => {
+            modalCharacterSelectionDisplay.classList.add('d-none');
+            modalCharacterList.classList.remove('d-none');
+            modalUploadBtn.disabled = true;
+            selectedCharacterIdForUpload = null;
+        });
+
+        // Combined listener for inputs in the modal to enable/disable the upload button
+        $('#uploadSampleModal').on('input change', '#modalNewCharacterName, #modalNewAnimeSelect', function() {
+            const mode = uploadModeSelect.value;
+            if (mode === 'new') {
+                const anime = modalNewAnimeSelect.value;
+                const name = modalNewCharacterName.value.trim();
+                modalUploadBtn.disabled = !(anime && name);
+            }
+        });
+
+        // Modal Upload Logic
+        modalUploadBtn.addEventListener('click', async () => {
+            const mode = uploadModeSelect.value;
+            const b64Image = modalImageData.value;
+
+            modalUploadSpinner.classList.remove('d-none');
+            modalUploadBtn.disabled = true;
+            
+            let fetchUrl, payload, successMsg;
+
+            if (mode === 'existing') {
+                const charId = selectedCharacterIdForUpload;
+                if (!charId) {
+                    showToast('请先选择一个正确的角色。', 'danger');
+                    modalUploadSpinner.classList.add('d-none');
+                    return;
+                }
+                fetchUrl = '/api/upload_samples';
+                payload = { character_id: charId, image_b64: b64Image };
+                const selectedCharNameText = selectedCharName.textContent;
+                successMsg = `成功为 "${selectedCharNameText}" 上传了 1 个样本！`;
+
+            } else { // mode === 'new'
+                const animeName = modalNewAnimeSelect.value;
+                const charName = modalNewCharacterName.value.trim();
+                 if (!animeName || !charName) {
+                    showToast('请选择动漫并输入角色名称。', 'danger');
+                    modalUploadSpinner.classList.add('d-none');
+                    return;
+                }
+                fetchUrl = '/api/admin/create_new_character';
+                payload = { anime_name: animeName, character_name: charName, image_b64: b64Image };
+                successMsg = `成功创建新角色 "${charName}"！请稍后运行数据库更新。`;
+            }
+
+            try {
+                const res = await fetch(fetchUrl, { 
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload) 
+                });
+                const result = await res.json();
+                if (!res.ok || result.success === false) throw new Error(result.message || '上传失败');
+                
+                showToast(successMsg, 'success');
+                uploadSampleModal.hide();
+
+            } catch (err) {
+                showToast(`上传失败: ${err.message}`, 'danger');
+            } finally {
+                modalUploadSpinner.classList.add('d-none');
+                // The button remains disabled until a new valid selection is made
+            }
+        });
+
+        // --- Database Update & Preview Logic is now in _db_update_preview.html ---
+
+        $('#logModal').on('hidden.bs.modal', () => {
+            location.reload();
+        });
+    });
+    </script>
+{% endblock %}
