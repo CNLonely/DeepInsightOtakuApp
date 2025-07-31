@@ -10,7 +10,7 @@ import time
 from app.config import (
     load_config, save_config, character_meta_path, model_checkpoint_path,
     feature_db_path, class_map_path, yolo_model_path, train_data_dir_for_rename,
-    new_data_dir_for_rename, onnx_model_path, onnx_yolo_model_path
+    new_data_dir_for_rename, onnx_model_path, onnx_yolo_model_path,version,github_repo
 )
 
 # 蓝图导入
@@ -27,6 +27,7 @@ from app.controllers.upload_samples import upload_samples_bp
 from app.controllers.update_preview import update_preview_bp
 from app.controllers.reload_db import reload_db_bp
 from app.controllers.setting import setting_bp
+from app.controllers.update import update_bp
 
 # 服务导入
 from app.services.gallery_service import GalleryService
@@ -71,7 +72,8 @@ def create_app():
         (upload_samples_bp, None),
         (update_preview_bp, None),
         (setting_bp, None),
-        (reload_db_bp, None)
+        (reload_db_bp, None),
+        (update_bp, None)
     ]
     
     for blueprint, url_prefix in blueprints:
@@ -94,6 +96,9 @@ def create_app():
         "NEW_DATA_DIR": new_data_dir_for_rename
     }
     app.config.update(model_paths)
+
+    app.config["version"] = version
+    app.config["github_repo"] = github_repo
 
     # 生成secret_key
     if "secret_key" not in app.config or not app.config["secret_key"]:
