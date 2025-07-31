@@ -1,0 +1,778 @@
+{
+  "version": "1.0.0",
+  "update_notes": "DeepInsightOtakuAppV1.0.0 发布",
+  "last_update": "2025-07-31T06:53:41Z",
+  "files": {
+    "app.py": {
+      "path": "app.py",
+      "sha256": "1f12e0b5a57f383f235e8b3fe99ee7ae1d0ce5a6657a0bf8243649794f4a4004",
+      "size": 9887,
+      "download_url": "https://gh-proxy.com/https://github.com/CNLonely/DeepInsightOtakuApp/raw/main/app.py",
+      "category": "python",
+      "required": true,
+      "is_large_file": false
+    },
+    "Dockerfile": {
+      "path": "Dockerfile",
+      "sha256": "c15595d83839669307327c3d1a496431ca3799f3d489c7195b974dd8361f0a3e",
+      "size": 737,
+      "download_url": "https://gh-proxy.com/https://github.com/CNLonely/DeepInsightOtakuApp/raw/main/Dockerfile",
+      "category": "other",
+      "required": true,
+      "is_large_file": false
+    },
+    "requirements.txt": {
+      "path": "requirements.txt",
+      "sha256": "0600c8a95473f5f6b7843b16d95b09fbad4f4ee89ca78756511f980546e5778b",
+      "size": 4296,
+      "download_url": "https://gh-proxy.com/https://github.com/CNLonely/DeepInsightOtakuApp/raw/main/requirements.txt",
+      "category": "other",
+      "required": true,
+      "is_large_file": false
+    },
+    "app\\config.py": {
+      "path": "app\\config.py",
+      "sha256": "224225c5e44a6515c10eb021473c58a3656d46f35383cc1375b50ba0e4f4458e",
+      "size": 6805,
+      "download_url": "https://gh-proxy.com/https://github.com/CNLonely/DeepInsightOtakuApp/raw/main/app\\config.py",
+      "category": "python",
+      "required": true,
+      "is_large_file": false
+    },
+    "app\\log.py": {
+      "path": "app\\log.py",
+      "sha256": "46e1a569e87dbe03d61bcbab565961730bef8dee406c5e20a061f6392e14a780",
+      "size": 3579,
+      "download_url": "https://gh-proxy.com/https://github.com/CNLonely/DeepInsightOtakuApp/raw/main/app\\log.py",
+      "category": "python",
+      "required": true,
+      "is_large_file": false
+    },
+    "app\\__init__.py": {
+      "path": "app\\__init__.py",
+      "sha256": "7eb70257593da06f682a3ddda54a9d260d4fc514f645237f5ca74b08f8da61a6",
+      "size": 2,
+      "download_url": "https://gh-proxy.com/https://github.com/CNLonely/DeepInsightOtakuApp/raw/main/app\\__init__.py",
+      "category": "python",
+      "required": true,
+      "is_large_file": false
+    },
+    "app\\controllers\\auth.py": {
+      "path": "app\\controllers\\auth.py",
+      "sha256": "dbdc07b80a5aa8d20a3fc391a96ab258fe9ca01c81c3b367aeb5f58278a6488a",
+      "size": 8164,
+      "download_url": "https://gh-proxy.com/https://github.com/CNLonely/DeepInsightOtakuApp/raw/main/app\\controllers\\auth.py",
+      "category": "controllers",
+      "required": true,
+      "is_large_file": false
+    },
+    "app\\controllers\\auto_test.py": {
+      "path": "app\\controllers\\auto_test.py",
+      "sha256": "e467910f2e565f571e1d03e0576577bfacc225568a73f3508fd0ae12cbe874e7",
+      "size": 1093,
+      "download_url": "https://gh-proxy.com/https://github.com/CNLonely/DeepInsightOtakuApp/raw/main/app\\controllers\\auto_test.py",
+      "category": "controllers",
+      "required": true,
+      "is_large_file": false
+    },
+    "app\\controllers\\bilibot.py": {
+      "path": "app\\controllers\\bilibot.py",
+      "sha256": "68c3deecd85d65bebab7ea3decf6c28760205d0e416605413eb384bea538e616",
+      "size": 9297,
+      "download_url": "https://gh-proxy.com/https://github.com/CNLonely/DeepInsightOtakuApp/raw/main/app\\controllers\\bilibot.py",
+      "category": "controllers",
+      "required": true,
+      "is_large_file": false
+    },
+    "app\\controllers\\gallery.py": {
+      "path": "app\\controllers\\gallery.py",
+      "sha256": "6b3a9f31751945625c66cd9e47b32d58cc0fc3be87b076b0be58e7566eacfb0d",
+      "size": 8135,
+      "download_url": "https://gh-proxy.com/https://github.com/CNLonely/DeepInsightOtakuApp/raw/main/app\\controllers\\gallery.py",
+      "category": "controllers",
+      "required": true,
+      "is_large_file": false
+    },
+    "app\\controllers\\logs_api.py": {
+      "path": "app\\controllers\\logs_api.py",
+      "sha256": "835a674fc5176cc21fbbb3bf6f51f27f86ea63e1ef9b7f06ae4669d677e85f02",
+      "size": 2980,
+      "download_url": "https://gh-proxy.com/https://github.com/CNLonely/DeepInsightOtakuApp/raw/main/app\\controllers\\logs_api.py",
+      "category": "controllers",
+      "required": true,
+      "is_large_file": false
+    },
+    "app\\controllers\\recognize.py": {
+      "path": "app\\controllers\\recognize.py",
+      "sha256": "b91861763b1c1017bbe9f06fd10bab0bcedf79585bab448e70306993672efe5a",
+      "size": 6033,
+      "download_url": "https://gh-proxy.com/https://github.com/CNLonely/DeepInsightOtakuApp/raw/main/app\\controllers\\recognize.py",
+      "category": "controllers",
+      "required": true,
+      "is_large_file": false
+    },
+    "app\\controllers\\reload_db.py": {
+      "path": "app\\controllers\\reload_db.py",
+      "sha256": "f916e3a44cf30904b63e10ece8d7a881eac827368ef59a4d4526fe154164ce96",
+      "size": 4707,
+      "download_url": "https://gh-proxy.com/https://github.com/CNLonely/DeepInsightOtakuApp/raw/main/app\\controllers\\reload_db.py",
+      "category": "controllers",
+      "required": true,
+      "is_large_file": false
+    },
+    "app\\controllers\\setting.py": {
+      "path": "app\\controllers\\setting.py",
+      "sha256": "88ae10a30e232e3ab252b0d744508d45d6d547b1f7d14d1e1fb6a78f77ae9a14",
+      "size": 4605,
+      "download_url": "https://gh-proxy.com/https://github.com/CNLonely/DeepInsightOtakuApp/raw/main/app\\controllers\\setting.py",
+      "category": "controllers",
+      "required": true,
+      "is_large_file": false
+    },
+    "app\\controllers\\statistics.py": {
+      "path": "app\\controllers\\statistics.py",
+      "sha256": "798c366756dc01be641fcbcb4e62502226aaa437b10bf57901b0b471d7482d23",
+      "size": 3006,
+      "download_url": "https://gh-proxy.com/https://github.com/CNLonely/DeepInsightOtakuApp/raw/main/app\\controllers\\statistics.py",
+      "category": "controllers",
+      "required": true,
+      "is_large_file": false
+    },
+    "app\\controllers\\update_preview.py": {
+      "path": "app\\controllers\\update_preview.py",
+      "sha256": "fdcc6ee599173c3df4e619d9f48c66aec04e6631aa9635ab184bdea3dd9e534a",
+      "size": 1777,
+      "download_url": "https://gh-proxy.com/https://github.com/CNLonely/DeepInsightOtakuApp/raw/main/app\\controllers\\update_preview.py",
+      "category": "controllers",
+      "required": true,
+      "is_large_file": false
+    },
+    "app\\controllers\\upload_anime.py": {
+      "path": "app\\controllers\\upload_anime.py",
+      "sha256": "36f19d4db41bd93639e6ceabafa673cc0df8211ec45f9fa442922da1396ce924",
+      "size": 4206,
+      "download_url": "https://gh-proxy.com/https://github.com/CNLonely/DeepInsightOtakuApp/raw/main/app\\controllers\\upload_anime.py",
+      "category": "controllers",
+      "required": true,
+      "is_large_file": false
+    },
+    "app\\controllers\\upload_samples.py": {
+      "path": "app\\controllers\\upload_samples.py",
+      "sha256": "a3506cc91b34e84be9f854ce66f7e1edc72c3395e7b57780ea136706d64ce00a",
+      "size": 3359,
+      "download_url": "https://gh-proxy.com/https://github.com/CNLonely/DeepInsightOtakuApp/raw/main/app\\controllers\\upload_samples.py",
+      "category": "controllers",
+      "required": true,
+      "is_large_file": false
+    },
+    "app\\controllers\\views.py": {
+      "path": "app\\controllers\\views.py",
+      "sha256": "cc289d41428197f3b0950963a72434f86597a027d7a479b22e5b7baf0434fc82",
+      "size": 2536,
+      "download_url": "https://gh-proxy.com/https://github.com/CNLonely/DeepInsightOtakuApp/raw/main/app\\controllers\\views.py",
+      "category": "controllers",
+      "required": true,
+      "is_large_file": false
+    },
+    "app\\core\\datasets.py": {
+      "path": "app\\core\\datasets.py",
+      "sha256": "2a04de1ddee0090b5df615e1edab63aeba219cd08cd3b9ed8c4a7926a1075331",
+      "size": 1987,
+      "download_url": "https://gh-proxy.com/https://github.com/CNLonely/DeepInsightOtakuApp/raw/main/app\\core\\datasets.py",
+      "category": "core",
+      "required": true,
+      "is_large_file": false
+    },
+    "app\\core\\feature_extractor.py": {
+      "path": "app\\core\\feature_extractor.py",
+      "sha256": "96f8da3aee1be8c7bee8adb843acf6065a8e5b69d38f9e90561b3e922c1467a6",
+      "size": 24966,
+      "download_url": "https://gh-proxy.com/https://github.com/CNLonely/DeepInsightOtakuApp/raw/main/app\\core\\feature_extractor.py",
+      "category": "core",
+      "required": true,
+      "is_large_file": false
+    },
+    "app\\core\\models.py": {
+      "path": "app\\core\\models.py",
+      "sha256": "d03b873f7747bfc277206bde79c4c51d64e0084888605e7989e8660770c53934",
+      "size": 6264,
+      "download_url": "https://gh-proxy.com/https://github.com/CNLonely/DeepInsightOtakuApp/raw/main/app\\core\\models.py",
+      "category": "core",
+      "required": true,
+      "is_large_file": false
+    },
+    "app\\core\\recognizer.py": {
+      "path": "app\\core\\recognizer.py",
+      "sha256": "87b09329cb59d4b56c9de41194f3ec206b298130dbe8d5bc0cd8b39c2ff93e84",
+      "size": 25262,
+      "download_url": "https://gh-proxy.com/https://github.com/CNLonely/DeepInsightOtakuApp/raw/main/app\\core\\recognizer.py",
+      "category": "core",
+      "required": true,
+      "is_large_file": false
+    },
+    "app\\core\\__init__.py": {
+      "path": "app\\core\\__init__.py",
+      "sha256": "36a9e7f1c95b82ffb99743e0c5c4ce95d83c9a430aac59f84ef3cbfab6145068",
+      "size": 1,
+      "download_url": "https://gh-proxy.com/https://github.com/CNLonely/DeepInsightOtakuApp/raw/main/app\\core\\__init__.py",
+      "category": "core",
+      "required": true,
+      "is_large_file": false
+    },
+    "app\\services\\auto_test_service.py": {
+      "path": "app\\services\\auto_test_service.py",
+      "sha256": "3c6d29d60fd8fc37075157cb6a0ba350d31241211c36c34a8364bc399f5a13c1",
+      "size": 10089,
+      "download_url": "https://gh-proxy.com/https://github.com/CNLonely/DeepInsightOtakuApp/raw/main/app\\services\\auto_test_service.py",
+      "category": "services",
+      "required": true,
+      "is_large_file": false
+    },
+    "app\\services\\bilibot_service.py": {
+      "path": "app\\services\\bilibot_service.py",
+      "sha256": "cd559df7011349245c4cda15f2c7306ed27f57df56075913d017230e943e9043",
+      "size": 22802,
+      "download_url": "https://gh-proxy.com/https://github.com/CNLonely/DeepInsightOtakuApp/raw/main/app\\services\\bilibot_service.py",
+      "category": "services",
+      "required": true,
+      "is_large_file": false
+    },
+    "app\\services\\gallery_service.py": {
+      "path": "app\\services\\gallery_service.py",
+      "sha256": "f29e0e4b7a67a0b6bfcb0975788c78fd577aabbee740b9058ca56d59580412b6",
+      "size": 13810,
+      "download_url": "https://gh-proxy.com/https://github.com/CNLonely/DeepInsightOtakuApp/raw/main/app\\services\\gallery_service.py",
+      "category": "services",
+      "required": true,
+      "is_large_file": false
+    },
+    "app\\services\\recognition_service.py": {
+      "path": "app\\services\\recognition_service.py",
+      "sha256": "d7ad3300d4bc83fae9ae374358a55631b18af55e23d2ac1973416ab8930833a0",
+      "size": 3471,
+      "download_url": "https://gh-proxy.com/https://github.com/CNLonely/DeepInsightOtakuApp/raw/main/app\\services\\recognition_service.py",
+      "category": "services",
+      "required": true,
+      "is_large_file": false
+    },
+    "app\\services\\setting_service.py": {
+      "path": "app\\services\\setting_service.py",
+      "sha256": "b12bb26e3733b02be608cebd66625c3e3016dfaf2c17f81aa4c5762af3094e5c",
+      "size": 11379,
+      "download_url": "https://gh-proxy.com/https://github.com/CNLonely/DeepInsightOtakuApp/raw/main/app\\services\\setting_service.py",
+      "category": "services",
+      "required": true,
+      "is_large_file": false
+    },
+    "app\\services\\update_preview_service.py": {
+      "path": "app\\services\\update_preview_service.py",
+      "sha256": "5cac0556f0fd349ee06107bf9fb718a4f0743ed9cf0f39c90b3c06c35d9c6e01",
+      "size": 8475,
+      "download_url": "https://gh-proxy.com/https://github.com/CNLonely/DeepInsightOtakuApp/raw/main/app\\services\\update_preview_service.py",
+      "category": "services",
+      "required": true,
+      "is_large_file": false
+    },
+    "app\\services\\upload_anime_service.py": {
+      "path": "app\\services\\upload_anime_service.py",
+      "sha256": "59afaafbdb5d3972b078f5f8883a23603840ef0fbc14214fbf820580bd71cb15",
+      "size": 14460,
+      "download_url": "https://gh-proxy.com/https://github.com/CNLonely/DeepInsightOtakuApp/raw/main/app\\services\\upload_anime_service.py",
+      "category": "services",
+      "required": true,
+      "is_large_file": false
+    },
+    "app\\services\\upload_samples_service.py": {
+      "path": "app\\services\\upload_samples_service.py",
+      "sha256": "d0f1002379db9c90abb205ab6fc9a32ce0f4994d2c54967d29d24d5a0f038698",
+      "size": 7670,
+      "download_url": "https://gh-proxy.com/https://github.com/CNLonely/DeepInsightOtakuApp/raw/main/app\\services\\upload_samples_service.py",
+      "category": "services",
+      "required": true,
+      "is_large_file": false
+    },
+    "app\\utils\\download_models.py": {
+      "path": "app\\utils\\download_models.py",
+      "sha256": "cfe0f47660c8d9feba21ae504e446b1abd1052ca7423a52a09963ae5805f8b3d",
+      "size": 10398,
+      "download_url": "https://gh-proxy.com/https://github.com/CNLonely/DeepInsightOtakuApp/raw/main/app\\utils\\download_models.py",
+      "category": "python",
+      "required": true,
+      "is_large_file": false
+    },
+    "app\\utils\\image_renderer.py": {
+      "path": "app\\utils\\image_renderer.py",
+      "sha256": "969fa8177ce86487957743e2f01beea9b261ccd047c237388cf13d1dc3575540",
+      "size": 12583,
+      "download_url": "https://gh-proxy.com/https://github.com/CNLonely/DeepInsightOtakuApp/raw/main/app\\utils\\image_renderer.py",
+      "category": "python",
+      "required": true,
+      "is_large_file": false
+    },
+    "models\\character_meta_restructured.json": {
+      "path": "models\\character_meta_restructured.json",
+      "sha256": "106576d2280da128d71359ff23aaac1ef82105c15cfb0182d40fafcf600b8e8a",
+      "size": 2047237,
+      "download_url": "https://gh-proxy.com/https://github.com/CNLonely/DeepInsightOtakuApp/releases/download/v20250731_144641/character_meta_restructured.json",
+      "category": "config",
+      "required": true,
+      "is_large_file": true
+    },
+    "models\\class_to_idx.json": {
+      "path": "models\\class_to_idx.json",
+      "sha256": "cc5c61ea6495dd9de61283b008c5508b63ccae986e9089c7613c466d61dc157f",
+      "size": 774013,
+      "download_url": "https://gh-proxy.com/https://github.com/CNLonely/DeepInsightOtakuApp/releases/download/v20250731_144641/class_to_idx.json",
+      "category": "config",
+      "required": true,
+      "is_large_file": true
+    },
+    "models\\feature_db.npy": {
+      "path": "models\\feature_db.npy",
+      "sha256": "5d430a8ad3af59b179d92f49b04a3e6c902f727c3a2b1a94b0c8e977e3dc0517",
+      "size": 51288000,
+      "download_url": "https://gh-proxy.com/https://github.com/CNLonely/DeepInsightOtakuApp/releases/download/v20250731_144641/feature_db.npy",
+      "category": "other",
+      "required": true,
+      "is_large_file": true
+    },
+    "models\\onnx\\model.onnx": {
+      "path": "models\\onnx\\model.onnx",
+      "sha256": "f43957200bbd46d3f7e8af4b6ff61660fcad4ba796a3ee633725c58e028e7c55",
+      "size": 126489812,
+      "download_url": "https://gh-proxy.com/https://github.com/CNLonely/DeepInsightOtakuApp/releases/download/v20250731_144641/model.onnx",
+      "category": "models",
+      "required": true,
+      "is_large_file": true
+    },
+    "models\\onnx\\yolo_model.onnx": {
+      "path": "models\\onnx\\yolo_model.onnx",
+      "sha256": "e2054b2110bd75ddd7e980f9b63ea744723d79532f056fb1faf5fbaa976bc131",
+      "size": 101351388,
+      "download_url": "https://gh-proxy.com/https://github.com/CNLonely/DeepInsightOtakuApp/releases/download/v20250731_144641/yolo_model.onnx",
+      "category": "models",
+      "required": true,
+      "is_large_file": true
+    },
+    "models\\pytorch\\model.pth": {
+      "path": "models\\pytorch\\model.pth",
+      "sha256": "9e921a1d0e832cc2e989ca5f1cbb09ea40253724308d6ff1669e2dbc429f37f7",
+      "size": 219517207,
+      "download_url": "https://gh-proxy.com/https://github.com/CNLonely/DeepInsightOtakuApp/releases/download/v20250731_144641/model.pth",
+      "category": "models",
+      "required": true,
+      "is_large_file": true
+    },
+    "models\\pytorch\\yolo_model.pt": {
+      "path": "models\\pytorch\\yolo_model.pt",
+      "sha256": "5277b1ef12f789e70b61c1d749cc08717d8f15223829ba2e27a2de9ff8519182",
+      "size": 51215129,
+      "download_url": "https://gh-proxy.com/https://github.com/CNLonely/DeepInsightOtakuApp/releases/download/v20250731_144641/yolo_model.pt",
+      "category": "models",
+      "required": true,
+      "is_large_file": true
+    },
+    "static\\backgrounds\\default.png": {
+      "path": "static\\backgrounds\\default.png",
+      "sha256": "18b6a087eeb8082ebeab61273ae096454219dfb4098a21a6bcd45050f95948ff",
+      "size": 286,
+      "download_url": "https://gh-proxy.com/https://github.com/CNLonely/DeepInsightOtakuApp/raw/main/static\\backgrounds\\default.png",
+      "category": "images",
+      "required": true,
+      "is_large_file": false
+    },
+    "static\\js\\vendor\\jquery.min.js": {
+      "path": "static\\js\\vendor\\jquery.min.js",
+      "sha256": "fc9a93dd241f6b045cbff0481cf4e1901becd0e12fb45166a8f17f95823f0b1a",
+      "size": 87533,
+      "download_url": "https://gh-proxy.com/https://github.com/CNLonely/DeepInsightOtakuApp/raw/main/static\\js\\vendor\\jquery.min.js",
+      "category": "frontend",
+      "required": true,
+      "is_large_file": false
+    },
+    "static\\js\\vendor\\select2.min.js": {
+      "path": "static\\js\\vendor\\select2.min.js",
+      "sha256": "f7244fff610595b944f76bf3080d74e3af42b5dd234f8f079e698cc39ac966b0",
+      "size": 73163,
+      "download_url": "https://gh-proxy.com/https://github.com/CNLonely/DeepInsightOtakuApp/raw/main/static\\js\\vendor\\select2.min.js",
+      "category": "frontend",
+      "required": true,
+      "is_large_file": false
+    },
+    "templates\\_base.html": {
+      "path": "templates\\_base.html",
+      "sha256": "9a019040668b49939048843194d96ecc90e77387bdc0fb28ccdaf5bb4a8da669",
+      "size": 11368,
+      "download_url": "https://gh-proxy.com/https://github.com/CNLonely/DeepInsightOtakuApp/raw/main/templates\\_base.html",
+      "category": "frontend",
+      "required": true,
+      "is_large_file": false
+    },
+    "templates\\_bass_front.html": {
+      "path": "templates\\_bass_front.html",
+      "sha256": "0240b8e4d804a56ece0bbbae37804614fa623e36cb9f8b6e90290cc15c276125",
+      "size": 9236,
+      "download_url": "https://gh-proxy.com/https://github.com/CNLonely/DeepInsightOtakuApp/raw/main/templates\\_bass_front.html",
+      "category": "frontend",
+      "required": true,
+      "is_large_file": false
+    },
+    "templates\\backend\\api_docs.html": {
+      "path": "templates\\backend\\api_docs.html",
+      "sha256": "d22bc2f56e0304793b941227beef23bab355bec14e45c056daefed24761c8d31",
+      "size": 25103,
+      "download_url": "https://gh-proxy.com/https://github.com/CNLonely/DeepInsightOtakuApp/raw/main/templates\\backend\\api_docs.html",
+      "category": "frontend",
+      "required": true,
+      "is_large_file": false
+    },
+    "templates\\backend\\auto_test.html": {
+      "path": "templates\\backend\\auto_test.html",
+      "sha256": "e05d7378fd22b1f34b32e3a3000227300cfcad894f4a11e4227c588e444c20bb",
+      "size": 9179,
+      "download_url": "https://gh-proxy.com/https://github.com/CNLonely/DeepInsightOtakuApp/raw/main/templates\\backend\\auto_test.html",
+      "category": "frontend",
+      "required": true,
+      "is_large_file": false
+    },
+    "templates\\backend\\batch_import.html": {
+      "path": "templates\\backend\\batch_import.html",
+      "sha256": "a5607e3a6082bbec9162fbb81f4d80a63d7b6a803f86d09df9afbf7b27ea11c3",
+      "size": 15055,
+      "download_url": "https://gh-proxy.com/https://github.com/CNLonely/DeepInsightOtakuApp/raw/main/templates\\backend\\batch_import.html",
+      "category": "frontend",
+      "required": true,
+      "is_large_file": false
+    },
+    "templates\\backend\\bilibot.html": {
+      "path": "templates\\backend\\bilibot.html",
+      "sha256": "84ce90f675aad16e3d19cfeb0cf21de14f089aa02b79fec436dc9a9062990289",
+      "size": 29151,
+      "download_url": "https://gh-proxy.com/https://github.com/CNLonely/DeepInsightOtakuApp/raw/main/templates\\backend\\bilibot.html",
+      "category": "frontend",
+      "required": true,
+      "is_large_file": false
+    },
+    "templates\\backend\\change_password.html": {
+      "path": "templates\\backend\\change_password.html",
+      "sha256": "681bc1fb06fefdae1cd4a5cb2554e3cc65429e27489655829332fd62eed8308c",
+      "size": 2054,
+      "download_url": "https://gh-proxy.com/https://github.com/CNLonely/DeepInsightOtakuApp/raw/main/templates\\backend\\change_password.html",
+      "category": "frontend",
+      "required": true,
+      "is_large_file": false
+    },
+    "templates\\backend\\character_gallery.html": {
+      "path": "templates\\backend\\character_gallery.html",
+      "sha256": "77bdfa49cdbfa4811d8032f6db618355b6ffb367725a05bff147e7be04981eee",
+      "size": 81772,
+      "download_url": "https://gh-proxy.com/https://github.com/CNLonely/DeepInsightOtakuApp/raw/main/templates\\backend\\character_gallery.html",
+      "category": "frontend",
+      "required": true,
+      "is_large_file": false
+    },
+    "templates\\backend\\login.html": {
+      "path": "templates\\backend\\login.html",
+      "sha256": "a725e178614a5af3e2d9bc50970d8f711c2bb9b1b2e20ba73bb4524a22cac6dd",
+      "size": 3221,
+      "download_url": "https://gh-proxy.com/https://github.com/CNLonely/DeepInsightOtakuApp/raw/main/templates\\backend\\login.html",
+      "category": "frontend",
+      "required": true,
+      "is_large_file": false
+    },
+    "templates\\backend\\manage.html": {
+      "path": "templates\\backend\\manage.html",
+      "sha256": "1d42ed18d876a94970959904eecfbc4c70cd195e660f09e1b47fd71038b60449",
+      "size": 69116,
+      "download_url": "https://gh-proxy.com/https://github.com/CNLonely/DeepInsightOtakuApp/raw/main/templates\\backend\\manage.html",
+      "category": "frontend",
+      "required": true,
+      "is_large_file": false
+    },
+    "templates\\backend\\settings.html": {
+      "path": "templates\\backend\\settings.html",
+      "sha256": "84f31d763a2315ecf038fa2719dedd640c4d029599bcfc8dc164b274a0ba3364",
+      "size": 67374,
+      "download_url": "https://gh-proxy.com/https://github.com/CNLonely/DeepInsightOtakuApp/raw/main/templates\\backend\\settings.html",
+      "category": "frontend",
+      "required": true,
+      "is_large_file": false
+    },
+    "templates\\backend\\_db_update_preview.html": {
+      "path": "templates\\backend\\_db_update_preview.html",
+      "sha256": "fc79b14cf38c41e70002082b19337af3d682175b66d889233fc5769924bd8c2e",
+      "size": 23372,
+      "download_url": "https://gh-proxy.com/https://github.com/CNLonely/DeepInsightOtakuApp/raw/main/templates\\backend\\_db_update_preview.html",
+      "category": "frontend",
+      "required": true,
+      "is_large_file": false
+    },
+    "templates\\backgrounds\\-.png": {
+      "path": "templates\\backgrounds\\-.png",
+      "sha256": "92dc6951a350d3c88e37ffc573de6dae2b5da2efdb1614ab2a134a28b9b36a00",
+      "size": 1498295,
+      "download_url": "https://gh-proxy.com/https://github.com/CNLonely/DeepInsightOtakuApp/raw/main/templates\\backgrounds\\-.png",
+      "category": "images",
+      "required": true,
+      "is_large_file": false
+    },
+    "templates\\backgrounds\\-1.png": {
+      "path": "templates\\backgrounds\\-1.png",
+      "sha256": "a788d7ca683151e1fa3a33dc9fa833ec4d04be18bb55d997f04e747a472241e2",
+      "size": 1521584,
+      "download_url": "https://gh-proxy.com/https://github.com/CNLonely/DeepInsightOtakuApp/raw/main/templates\\backgrounds\\-1.png",
+      "category": "images",
+      "required": true,
+      "is_large_file": false
+    },
+    "templates\\backgrounds\\13e3e064ca5d46f8b844fd6403213836.png": {
+      "path": "templates\\backgrounds\\13e3e064ca5d46f8b844fd6403213836.png",
+      "sha256": "72208273440ea1ca1a81121f0e077e1971827acc77942633fd8c5aa3e838bbd4",
+      "size": 6072804,
+      "download_url": "https://gh-proxy.com/https://github.com/CNLonely/DeepInsightOtakuApp/raw/main/templates\\backgrounds\\13e3e064ca5d46f8b844fd6403213836.png",
+      "category": "images",
+      "required": true,
+      "is_large_file": false
+    },
+    "templates\\backgrounds\\2d81e5fc173248d2bd28b21886a3be83.png": {
+      "path": "templates\\backgrounds\\2d81e5fc173248d2bd28b21886a3be83.png",
+      "sha256": "bae1d8cc9f5151fec8d26b548bacf66989bdd10f9f3e9b37662c349579d1c3b9",
+      "size": 1017679,
+      "download_url": "https://gh-proxy.com/https://github.com/CNLonely/DeepInsightOtakuApp/raw/main/templates\\backgrounds\\2d81e5fc173248d2bd28b21886a3be83.png",
+      "category": "images",
+      "required": true,
+      "is_large_file": false
+    },
+    "templates\\backgrounds\\7d52e4fb1dc04d50bec4f85758ade087.png": {
+      "path": "templates\\backgrounds\\7d52e4fb1dc04d50bec4f85758ade087.png",
+      "sha256": "ca4e87f1f63be315ed646106be12ffd73ab5ecf7c469f8d95df4f08e2c6c2ed3",
+      "size": 1810322,
+      "download_url": "https://gh-proxy.com/https://github.com/CNLonely/DeepInsightOtakuApp/raw/main/templates\\backgrounds\\7d52e4fb1dc04d50bec4f85758ade087.png",
+      "category": "images",
+      "required": true,
+      "is_large_file": false
+    },
+    "templates\\backgrounds\\ab24b72870fe4a49b4dae46475e9bc16.png": {
+      "path": "templates\\backgrounds\\ab24b72870fe4a49b4dae46475e9bc16.png",
+      "sha256": "eca92f1fabe78960c242ed19ecd1b61ff949fbdbc56d4426112fde3adc271fa5",
+      "size": 5683198,
+      "download_url": "https://gh-proxy.com/https://github.com/CNLonely/DeepInsightOtakuApp/raw/main/templates\\backgrounds\\ab24b72870fe4a49b4dae46475e9bc16.png",
+      "category": "images",
+      "required": true,
+      "is_large_file": false
+    },
+    "templates\\backgrounds\\default.png": {
+      "path": "templates\\backgrounds\\default.png",
+      "sha256": "515c30d51a4c1fa29acd1c32f6db74b2c371d9ed86d74aee7b151a0434fad344",
+      "size": 580489,
+      "download_url": "https://gh-proxy.com/https://github.com/CNLonely/DeepInsightOtakuApp/raw/main/templates\\backgrounds\\default.png",
+      "category": "images",
+      "required": true,
+      "is_large_file": false
+    },
+    "templates\\backgrounds\\f0b8b57b18604b8bba6da0e6450db309.png": {
+      "path": "templates\\backgrounds\\f0b8b57b18604b8bba6da0e6450db309.png",
+      "sha256": "065f6e9f21f17a2f0d89e8d43c47d2a6374fad80c6e9e8d74ab10b5ecc282634",
+      "size": 2140105,
+      "download_url": "https://gh-proxy.com/https://github.com/CNLonely/DeepInsightOtakuApp/raw/main/templates\\backgrounds\\f0b8b57b18604b8bba6da0e6450db309.png",
+      "category": "images",
+      "required": true,
+      "is_large_file": false
+    },
+    "templates\\backgrounds\\T-.png": {
+      "path": "templates\\backgrounds\\T-.png",
+      "sha256": "3439ecbf4df66ea6b15e72187c25275516325d2a21875a0019d6147587a3b5c1",
+      "size": 6052624,
+      "download_url": "https://gh-proxy.com/https://github.com/CNLonely/DeepInsightOtakuApp/raw/main/templates\\backgrounds\\T-.png",
+      "category": "images",
+      "required": true,
+      "is_large_file": false
+    },
+    "templates\\frontend\\contributors.html": {
+      "path": "templates\\frontend\\contributors.html",
+      "sha256": "f8800d6baf6438a99afdf022ad278eb2cd9a9bfc0082f6faab2f0b9f77aa9745",
+      "size": 4984,
+      "download_url": "https://gh-proxy.com/https://github.com/CNLonely/DeepInsightOtakuApp/raw/main/templates\\frontend\\contributors.html",
+      "category": "frontend",
+      "required": true,
+      "is_large_file": false
+    },
+    "templates\\frontend\\index.html": {
+      "path": "templates\\frontend\\index.html",
+      "sha256": "1667ae3423a6f4afcfc606b9061c98285545dbdc3089c74f431f062dba77fb6d",
+      "size": 41697,
+      "download_url": "https://gh-proxy.com/https://github.com/CNLonely/DeepInsightOtakuApp/raw/main/templates\\frontend\\index.html",
+      "category": "frontend",
+      "required": true,
+      "is_large_file": false
+    },
+    "templates\\frontend\\statistics.html": {
+      "path": "templates\\frontend\\statistics.html",
+      "sha256": "86fe161ce291af13e873524a2b9c5303a5ac0c1fb2ec310acaa995728c3d7698",
+      "size": 8023,
+      "download_url": "https://gh-proxy.com/https://github.com/CNLonely/DeepInsightOtakuApp/raw/main/templates\\frontend\\statistics.html",
+      "category": "frontend",
+      "required": true,
+      "is_large_file": false
+    },
+    "templates\\img\\1.jpg": {
+      "path": "templates\\img\\1.jpg",
+      "sha256": "257d9235d294f4812b53d92bf4fcb8250c4577def2bcf1bc5ae9105cef65abab",
+      "size": 50033,
+      "download_url": "https://gh-proxy.com/https://github.com/CNLonely/DeepInsightOtakuApp/raw/main/templates\\img\\1.jpg",
+      "category": "images",
+      "required": true,
+      "is_large_file": false
+    },
+    "templates\\img\\2.jpg": {
+      "path": "templates\\img\\2.jpg",
+      "sha256": "0721c24875fd76f4cdc4d097bdde84b79913347ede2cbed5417dfa9cee9431be",
+      "size": 42699,
+      "download_url": "https://gh-proxy.com/https://github.com/CNLonely/DeepInsightOtakuApp/raw/main/templates\\img\\2.jpg",
+      "category": "images",
+      "required": true,
+      "is_large_file": false
+    },
+    "templates\\img\\3.jpg": {
+      "path": "templates\\img\\3.jpg",
+      "sha256": "adbbfc9e141380139144d32dd11426e52e095cf11510c7711c338b82601f6b2b",
+      "size": 13184,
+      "download_url": "https://gh-proxy.com/https://github.com/CNLonely/DeepInsightOtakuApp/raw/main/templates\\img\\3.jpg",
+      "category": "images",
+      "required": true,
+      "is_large_file": false
+    },
+    "templates\\img\\4.jpg": {
+      "path": "templates\\img\\4.jpg",
+      "sha256": "e5b51181ea2520ff36c76cee42b15d40ead446896d20260fc03541c9201dd6f4",
+      "size": 59588,
+      "download_url": "https://gh-proxy.com/https://github.com/CNLonely/DeepInsightOtakuApp/raw/main/templates\\img\\4.jpg",
+      "category": "images",
+      "required": true,
+      "is_large_file": false
+    },
+    "templates\\img\\5.jpg": {
+      "path": "templates\\img\\5.jpg",
+      "sha256": "03960b6d0de3635acf2d481a62497b49602352a7a82b9e8ed39e1ca3c0dbef1e",
+      "size": 5267,
+      "download_url": "https://gh-proxy.com/https://github.com/CNLonely/DeepInsightOtakuApp/raw/main/templates\\img\\5.jpg",
+      "category": "images",
+      "required": true,
+      "is_large_file": false
+    },
+    "templates\\img\\data.json": {
+      "path": "templates\\img\\data.json",
+      "sha256": "57583245dc126414c49d9f9cd6ccf4488517987a483fd0a9968eea253505dc4e",
+      "size": 436,
+      "download_url": "https://gh-proxy.com/https://github.com/CNLonely/DeepInsightOtakuApp/raw/main/templates\\img\\data.json",
+      "category": "config",
+      "required": true,
+      "is_large_file": false
+    },
+    "templates\\js\\toast.js": {
+      "path": "templates\\js\\toast.js",
+      "sha256": "6a3c539887d01bebdb779e3582bd98a22cee3d962aa6098ecddb6d47afe0f5f8",
+      "size": 2367,
+      "download_url": "https://gh-proxy.com/https://github.com/CNLonely/DeepInsightOtakuApp/raw/main/templates\\js\\toast.js",
+      "category": "frontend",
+      "required": true,
+      "is_large_file": false
+    }
+  },
+  "categories": {
+    "python": [
+      "app.py",
+      "app\\config.py",
+      "app\\log.py",
+      "app\\__init__.py",
+      "app\\utils\\download_models.py",
+      "app\\utils\\image_renderer.py"
+    ],
+    "other": [
+      "Dockerfile",
+      "requirements.txt",
+      "models\\feature_db.npy"
+    ],
+    "controllers": [
+      "app\\controllers\\auth.py",
+      "app\\controllers\\auto_test.py",
+      "app\\controllers\\bilibot.py",
+      "app\\controllers\\gallery.py",
+      "app\\controllers\\logs_api.py",
+      "app\\controllers\\recognize.py",
+      "app\\controllers\\reload_db.py",
+      "app\\controllers\\setting.py",
+      "app\\controllers\\statistics.py",
+      "app\\controllers\\update_preview.py",
+      "app\\controllers\\upload_anime.py",
+      "app\\controllers\\upload_samples.py",
+      "app\\controllers\\views.py"
+    ],
+    "core": [
+      "app\\core\\datasets.py",
+      "app\\core\\feature_extractor.py",
+      "app\\core\\models.py",
+      "app\\core\\recognizer.py",
+      "app\\core\\__init__.py"
+    ],
+    "services": [
+      "app\\services\\auto_test_service.py",
+      "app\\services\\bilibot_service.py",
+      "app\\services\\gallery_service.py",
+      "app\\services\\recognition_service.py",
+      "app\\services\\setting_service.py",
+      "app\\services\\update_preview_service.py",
+      "app\\services\\upload_anime_service.py",
+      "app\\services\\upload_samples_service.py"
+    ],
+    "config": [
+      "models\\character_meta_restructured.json",
+      "models\\class_to_idx.json",
+      "templates\\img\\data.json"
+    ],
+    "models": [
+      "models\\onnx\\model.onnx",
+      "models\\onnx\\yolo_model.onnx",
+      "models\\pytorch\\model.pth",
+      "models\\pytorch\\yolo_model.pt"
+    ],
+    "images": [
+      "static\\backgrounds\\default.png",
+      "templates\\backgrounds\\-.png",
+      "templates\\backgrounds\\-1.png",
+      "templates\\backgrounds\\13e3e064ca5d46f8b844fd6403213836.png",
+      "templates\\backgrounds\\2d81e5fc173248d2bd28b21886a3be83.png",
+      "templates\\backgrounds\\7d52e4fb1dc04d50bec4f85758ade087.png",
+      "templates\\backgrounds\\ab24b72870fe4a49b4dae46475e9bc16.png",
+      "templates\\backgrounds\\default.png",
+      "templates\\backgrounds\\f0b8b57b18604b8bba6da0e6450db309.png",
+      "templates\\backgrounds\\T-.png",
+      "templates\\img\\1.jpg",
+      "templates\\img\\2.jpg",
+      "templates\\img\\3.jpg",
+      "templates\\img\\4.jpg",
+      "templates\\img\\5.jpg"
+    ],
+    "frontend": [
+      "static\\js\\vendor\\jquery.min.js",
+      "static\\js\\vendor\\select2.min.js",
+      "templates\\_base.html",
+      "templates\\_bass_front.html",
+      "templates\\backend\\api_docs.html",
+      "templates\\backend\\auto_test.html",
+      "templates\\backend\\batch_import.html",
+      "templates\\backend\\bilibot.html",
+      "templates\\backend\\change_password.html",
+      "templates\\backend\\character_gallery.html",
+      "templates\\backend\\login.html",
+      "templates\\backend\\manage.html",
+      "templates\\backend\\settings.html",
+      "templates\\backend\\_db_update_preview.html",
+      "templates\\frontend\\contributors.html",
+      "templates\\frontend\\index.html",
+      "templates\\frontend\\statistics.html",
+      "templates\\js\\toast.js"
+    ]
+  },
+  "release_tag": "v20250731_144641"
+}
