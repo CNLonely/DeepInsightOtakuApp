@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{{ title | default('动漫人脸识别') }}</title>
+    <!-- Common dependencies -->
+    <link href="https://cdn.staticfile.net/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://fonts.geekzu.org/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.staticfile.net/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css">
+    
+    <style>
+        :root {
+            --primary-color: #0d6efd;
+            --accent-color: #6f42c1; /* A nice purple for accents */
+            --bs-body-font-family: 'Noto Sans SC', sans-serif;
+
+            --c-bg: #f0f2f5; /* A subtle, cool gray for the background */
+            --c-text: #212529;
+            --c-card: #ffffff;
+            --c-border: #e8eaf0; /* Softer border color */
+            --c-shadow: rgba(60, 64, 67, .15);
+            --c-shadow-lg: rgba(60, 64, 67, .3);
+            --glow-primary: rgba(13, 110, 253, 0.4);
+            --glow-accent: rgba(111, 66, 193, 0.5);
+            --glass-bg-opacity: {{ config.get('glass_opacity', 0.5) }}; /* Default opacity from config */
+        }
+        [data-theme="dark"] {
+            --c-bg: #121212;
+            --c-text: #e9ecef;
+            --c-card: #1c1c1e;
+            --c-border: #3a3a3c;
+            --c-shadow: rgba(0,0,0, .4);
+            --c-shadow-lg: rgba(0,0,0, .6);
+            --glow-primary: rgba(77, 171, 247, 0.6);
+            --glow-accent: rgba(111, 66, 193, 0.7);
+        }
+        body {
+            /* 1. Set background image */
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            color: var(--c-text);
+            transition: background-color 0.3s, color 0.3s;
+            position: relative; /* For pseudo-element */
+            z-index: 0;
+            padding-top: 70px; /* Add padding for fixed navbar */
+        }
+
+        /* 3. Add overlay for readability */
+        body::before {
+            content: '';
+            position: fixed; /* Covers the entire viewport */
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: color-mix(in srgb, var(--c-bg), transparent 15%);
+            z-index: -1; /* Place it behind all content */
+        }
+
+        .navbar {
+            background-color: color-mix(in srgb, var(--c-card), transparent 30%) !important;
+            backdrop-filter: saturate(180%) blur(20px);
+            border-bottom: 1px solid color-mix(in srgb, var(--c-card), transparent 70%) !important;
+            transition: background-color 0.3s;
+        }
+
+        .navbar-brand {
+            font-size: 1.1rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            border-radius: .75rem;
+            color: var(--c-text);
+            transition: all 0.2s ease;
+        }
+        .navbar-brand:hover {
+            color: var(--c-text);
+            background-color: color-mix(in srgb, var(--c-text), transparent 92%);
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .navbar-brand i {
+            font-size: 1.4rem;
+            color: var(--primary-color);
+            background: none;
+            -webkit-background-clip: initial;
+            background-clip: initial;
+            -webkit-text-fill-color: initial;
+            position: static;
+        }
+        
+        .navbar .nav-link {
+            color: color-mix(in srgb, var(--c-text), transparent 20%);
+            font-weight: 500;
+            padding: 0.5rem 1rem;
+            border-radius: .5rem;
+            transition: all 0.2s ease;
+            display: flex; /* For icon alignment */
+            align-items: center;
+        }
+
+        .navbar .nav-link:hover {
+            color: var(--c-text);
+            background-color: color-mix(in srgb, var(--c-text), transparent 90%);
+        }
+
+        .navbar .nav-link.active {
+            color: var(--primary-color);
+            background-color: color-mix(in srgb, var(--primary-color), transparent 85%);
+            font-weight: 700;
+        }
+        
+        .navbar .nav-link.active::after {
+            content: none;
+        }
+
+        .dropdown-menu {
+            background-color: color-mix(in srgb, var(--c-card), transparent 15%) !important;
+            backdrop-filter: saturate(180%) blur(20px);
+            border: 1px solid color-mix(in srgb, var(--c-border), transparent 50%);
+            border-radius: .75rem;
+            padding: .5rem;
+            box-shadow: 0 .5rem 1rem var(--c-shadow);
+        }
+        .dropdown-item {
+            color: var(--c-text);
+            padding: .5rem 1rem;
+            border-radius: .5rem;
+            transition: background-color .2s ease, color .2s ease;
+        }
+        .dropdown-item:hover {
+            background-color: color-mix(in srgb, var(--c-text), transparent 90%);
+            color: var(--c-text);
+        }
+        .dropdown-item.active, .dropdown-item:active {
+            font-weight: bold;
+            color: var(--primary-color) !important;
+            background-color: color-mix(in srgb, var(--primary-color), transparent 85%) !important;
+        }
+        .dropdown-divider {
+            border-top: 1px solid color-mix(in srgb, var(--c-border), transparent 70%);
+        }
+
+        html, body {
+            height: 100%;
+        }
+    </style>
+    <style>
+        :root {
+            {% if active_background.type == 'color' %}
+            --bg-image: none;
+            --bg-color: {{ active_background.value }};
+            {% else %}
+            --bg-image: url("{{ url_for('static', filename=active_background.value) }}");
+            --bg-color: transparent;
+            {% endif %}
+        }
+        body {
+            background-image: var(--bg-image);
+            background-color: var(--bg-color);
+        }
+        
+        .frosted-glass-card {
+            background: color-mix(in srgb, var(--c-card), transparent calc(100% - (var(--glass-bg-opacity) * 100%)));
+            backdrop-filter: blur(12px);
+            border-radius: .75rem;
+            border: 1px solid color-mix(in srgb, var(--c-border), transparent 50%);
+            box-shadow: 0 4px 12px var(--c-shadow);
+            transition: all 0.25s ease-in-out;
+        }
+
+        .frosted-glass-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 24px var(--c-shadow-lg), 0 0 20px -5px var(--glow-primary);
+            border-color: var(--primary-color);
+        }
+    </style>
+    {% block styles %}{% endblock %}
+</head>
+<body class="d-flex flex-column">
+
+    <!-- Redesigned, fixed-top navbar -->
+    <nav class="navbar navbar-expand-lg fixed-top shadow-sm">
+        <div class="container-fluid px-4">
+            <a class="navbar-brand" href="{{ url_for('views.index') }}">
+                <i class="bi bi-sparkles"></i>{{ config.get('project_name', '动漫识别') }}
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNavbar" aria-controls="mainNavbar" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="mainNavbar">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.path == url_for('views.index') %}active{% endif %}" href="{{ url_for('views.index') }}">
+                            <i class="bi bi-house-door-fill me-2"></i>主页
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.path == url_for('views.contributors') %}active{% endif %}" href="{{ url_for('views.contributors') }}">
+                            <i class="bi bi-people-fill me-2"></i>贡献榜
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.path == url_for('statistics.index') %}active{% endif %}" href="{{ url_for('statistics.index') }}">
+                            <i class="bi bi-bar-chart-line-fill me-2"></i>统计
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+    <main class="flex-grow-1 d-flex flex-column">
+      {% block content %}{% endblock %}
+    </main>
+    <div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 1100"></div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='js/theme.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/toast.js') }}"></script>
+
+    {% block scripts %}{% endblock %}
+</body>
+</html> 
