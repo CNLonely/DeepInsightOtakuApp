@@ -1,0 +1,356 @@
+{% extends "_base.html" %}
+
+{% block styles %}
+    <style>
+        .main-container {
+            max-width: 900px;
+            width: 100%;
+        }
+        .upload-area {
+            border: 2px dashed var(--c-border);
+            border-radius: .75rem;
+            padding: 40px;
+            text-align: center;
+            transition: all 0.25s ease-in-out;
+            cursor: pointer;
+        }
+        .upload-area:hover, .upload-area.dragover {
+            transform: translateY(-5px);
+            border-color: var(--primary-color);
+            box-shadow: 0 0 25px -5px var(--glow-primary);
+        }
+        #processView.dragover .frosted-glass-card {
+            border: 2px dashed var(--primary-color);
+            box-shadow: 0 0 25px -5px var(--glow-primary);
+        }
+        #resultLog {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            max-height: 50vh;
+            overflow-y: auto;
+            background-color: color-mix(in srgb, var(--c-bg), transparent 20%);
+            border: 1px solid var(--c-border);
+            border-radius: .25rem;
+            padding: 1rem;
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+        }
+        .view {
+            display: none;
+        }
+        .view.active {
+            display: flex;
+            animation: fadeIn .5s ease-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* FAB --- New Styles */
+        .fab-container {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            z-index: 1050;
+        }
+        .fab-custom {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(45deg, var(--accent-color), var(--primary-color));
+            border: none;
+            border-radius: 50%;
+            color: white;
+            font-size: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2), 0 0 20px var(--glow-primary);
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+        .fab-custom:hover {
+            transform: scale(1.1) rotate(15deg);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3), 0 0 30px var(--glow-accent);
+            cursor: pointer;
+        }
+        .fab-custom:active {
+            transform: scale(0.95);
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+    <div id="uploadView" class="view active d-flex flex-column align-items-center justify-content-center flex-grow-1">
+        <div class="frosted-glass-card w-100 p-4" style="max-width: 900px;">
+            <h2 class="mb-4 text-center">上传角色数据压缩包</h2>
+            <label for="zipFile" id="uploadForm" class="upload-area d-flex flex-column align-items-center justify-content-center gap-3">
+                <input type="file" id="zipFile" accept=".zip" class="d-none" required multiple />
+                <i class="bi bi-file-earmark-zip" style="font-size: 4rem; color: var(--primary-color);"></i>
+                <p class="text-muted m-0 fs-5">拖拽多个 .zip 文件到此或点击选择</p>
+                <small class="text-muted">请确保压缩包内结构为 <code>动漫名/角色名/图片...</code> 或 <code>角色名/图片...</code></small>
+            </label>
+        </div>
+    </div>
+
+    <div id="processView" class="view d-none d-flex flex-column align-items-center justify-content-center flex-grow-1 w-100 p-4">
+        <div class="frosted-glass-card w-100 p-4" style="max-width: 900px;">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="m-0">待处理队列</h2>
+                <button id="cancelBtn" class="btn btn-sm btn-outline-danger">
+                    <i class="bi bi-x-lg"></i> 清空队列并重新上传
+                </button>
+            </div>
+            
+            <div id="fileQueue" class="mb-4" style="max-height: 40vh; overflow-y: auto;">
+                <!-- File queue will be populated here -->
+            </div>
+
+            <div class="mb-4">
+                <h5 class="mb-3">处理模式</h5>
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" name="processMode" id="modeTrain" value="train" checked>
+                    <label class="form-check-label" for="modeTrain">
+                        <strong>添加到 <code>data/train</code> (用于训练)</strong> - 用于添加新角色或已有角色的训练数据。
+                    </label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" name="processMode" id="modeNew" value="new">
+                    <label class="form-check-label" for="modeNew">
+                        <strong>添加到 <code>data/new</code> (用于新增)</strong> - 用于为现有角色补充新样本，后续需运行数据库更新。
+                    </label>
+                </div>
+            </div>
+
+            <div class="d-grid gap-2">
+                <button id="processBtn" class="btn btn-primary btn-lg">
+                    <span id="processBtnSpinner" class="spinner-border spinner-border-sm me-2 d-none" role="status" aria-hidden="true"></span>
+                    <i id="processBtnIcon" class="bi bi-files me-2"></i>
+                    <span id="processBtnText">开始处理全部</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Floating Action Button -->
+    <div class="fab-container">
+        <button id="updateDbBtn" class="fab-custom" title="添加或更新数据">
+            <i class="bi bi-plus-lg"></i>
+        </button>
+    </div>
+
+    {% include 'backend/_db_update_preview.html' %}
+
+    <!-- Toast Container -->
+    <div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 1100"></div>
+{% endblock %}
+
+{% block scripts %}
+    <script>
+        $(function() {
+            const views = {
+                upload: $('#uploadView'),
+                process: $('#processView'),
+            };
+
+            const uploadForm = $("#uploadForm");
+            const zipFile = $("#zipFile");
+            const fileQueue = $("#fileQueue");
+            const processBtn = $("#processBtn");
+            const cancelBtn = $("#cancelBtn");
+            const processView = $("#processView"); // New selector
+            
+            const processBtnSpinner = $("#processBtnSpinner");
+            const processBtnIcon = $("#processBtnIcon");
+            const processBtnText = $("#processBtnText");
+
+            let filesToProcess = [];
+
+            // --- View Management ---
+            function showView(viewName) {
+                Object.entries(views).forEach(([name, $view]) => {
+                    if (name === viewName) {
+                        $view.addClass('active').removeClass('d-none');
+                    } else {
+                        $view.removeClass('active').addClass('d-none');
+                    }
+                });
+            }
+
+            // The global showToast function is now available from toast.js
+
+            // --- File Upload Logic ---
+            const allDropZones = [uploadForm, processView];
+
+            allDropZones.forEach(zone => {
+                zone.on("dragenter dragover", e => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    zone.addClass("dragover");
+                });
+
+                zone.on("dragleave drop", e => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    zone.removeClass("dragover");
+                });
+            });
+
+
+            uploadForm.on("drop", e => {
+                handleFileSelection(e.originalEvent.dataTransfer.files);
+            });
+            
+            processView.on("drop", e => {
+                // We only want to handle drops on the process view, not on its children that might have their own drop handlers
+                if (e.target !== processView[0] && !$.contains(processView.find('.frosted-glass-card')[0], e.target)) {
+                    return;
+                }
+                handleFileSelection(e.originalEvent.dataTransfer.files);
+            });
+
+            zipFile.on("change", () => {
+                handleFileSelection(zipFile.prop('files'));
+                // Clear the input so the user can select the same file again
+                zipFile.val('');
+            });
+
+            function handleFileSelection(selectedFiles) {
+                if (!selectedFiles || !selectedFiles.length) return;
+                
+                let filesAdded = 0;
+                Array.from(selectedFiles).forEach(file => {
+                    if (!file.name.toLowerCase().endsWith('.zip')) {
+                        showToast(`已跳过非 .zip 文件: ${file.name}`, 'warning');
+                        return; // continue to next file
+                    }
+                    // Check for duplicates
+                    if (filesToProcess.some(existingFile => existingFile.name === file.name)) {
+                        showToast(`文件 "${file.name}" 已在队列中。`, 'info');
+                        return; // continue to next file
+                    }
+                    filesToProcess.push(file);
+                    filesAdded++;
+                });
+                
+                if (filesAdded === 0 && filesToProcess.length === 0) {
+                     showToast('未选择任何有效的 .zip 文件。', 'danger');
+                     return;
+                }
+                
+                if (filesAdded > 0) {
+                    showToast(`成功添加 ${filesAdded} 个压缩包到队列。`, 'success');
+                }
+
+                renderFileQueue();
+            }
+
+            function renderFileQueue() {
+                fileQueue.empty();
+                if (filesToProcess.length === 0) {
+                    showView('upload');
+                    return;
+                }
+
+                let html = '<ul class="list-group">';
+                filesToProcess.forEach((file, index) => {
+                    html += `
+                        <li id="file-item-${index}" class="list-group-item">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span><i class="bi bi-file-earmark-zip me-2"></i>${file.name}</span>
+                                <span id="status-${index}" class="badge bg-secondary">待处理</span>
+                            </div>
+                            <div id="log-container-${index}" class="mt-2" style="display: none;">
+                                <pre class="p-2 small" style="white-space: pre-wrap; word-wrap: break-word; max-height: 150px; overflow-y: auto; background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: .25rem;"></pre>
+                            </div>
+                        </li>
+                    `;
+                });
+                html += '</ul>';
+                fileQueue.html(html);
+                processBtn.prop('disabled', filesToProcess.length === 0);
+                setProcessButtonState(false, '开始处理全部');
+                showView('process');
+            }
+            
+            // --- Processing Logic ---
+            processBtn.on('click', async function() {
+                setProcessButtonState(true);
+                const mode = $('input[name="processMode"]:checked').val();
+
+                for (let i = 0; i < filesToProcess.length; i++) {
+                    const file = filesToProcess[i];
+                    const $status = $(`#status-${i}`);
+                    const $logContainer = $(`#log-container-${i}`);
+                    const $logPre = $logContainer.find('pre');
+                    
+                    $status.removeClass('bg-secondary bg-success bg-danger').addClass('bg-primary').text('处理中...');
+                    $logContainer.hide();
+                    $logPre.text('');
+
+                    const formData = new FormData();
+                    formData.append('file', file);
+                    formData.append('mode', mode);
+
+                    try {
+                        const response = await fetch('/api/admin/rename/process_zip', {
+                            method: 'POST',
+                            body: formData
+                        });
+                        
+                        const result = await response.json();
+
+                        $logPre.text(result.log);
+                        $logContainer.show();
+
+                        if (response.ok && result.success) {
+                            $status.removeClass('bg-primary').addClass('bg-success').text('成功');
+                            $logPre.removeClass('border-danger').addClass('border-success');
+                        } else {
+                            $status.removeClass('bg-primary').addClass('bg-danger').text('失败');
+                            $logPre.removeClass('border-success').addClass('border-danger');
+                        }
+
+                    } catch (error) {
+                         $status.removeClass('bg-primary').addClass('bg-danger').text('严重错误');
+                         $logPre.text('无法连接到服务器或发生未知客户端错误。\n' + error.toString());
+                         $logContainer.show();
+                         $logPre.addClass('border-danger');
+                    }
+                }
+                
+                showToast('所有文件处理完毕！', 'success');
+                setProcessButtonState(false, '再次处理');
+            });
+
+            function setProcessButtonState(isLoading, newText) {
+                if (isLoading) {
+                    processBtn.prop('disabled', true);
+                    processBtnSpinner.removeClass('d-none');
+                    processBtnIcon.addClass('d-none');
+                    processBtnText.text('正在处理...');
+                } else {
+                    processBtn.prop('disabled', filesToProcess.length === 0);
+                    processBtnSpinner.addClass('d-none');
+                    processBtnIcon.removeClass('d-none');
+                    if (newText) {
+                        processBtnText.text(newText);
+                    }
+                }
+            }
+            
+            // --- Reset/Cancel ---
+            function resetAll() {
+                zipFile.val('');
+                filesToProcess = [];
+                renderFileQueue();
+                setProcessButtonState(false, '开始处理全部');
+            }
+
+            cancelBtn.on('click', resetAll);
+
+            // --- Database Update & Preview Logic is now in _db_update_preview.html ---
+
+            // Initial view
+            showView('upload');
+        });
+    </script>
+{% endblock %} 
