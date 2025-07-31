@@ -1,0 +1,1766 @@
+{% extends "_base.html" %}
+
+{% block title %}全部角色 - {{ super() }}{% endblock %}
+
+{% block styles %}
+    <style>
+        .accordion-button {
+            font-weight: 500;
+        }
+        .accordion-button:not(.collapsed) {
+            background-color: color-mix(in srgb, var(--primary-color), transparent 85%);
+            color: var(--primary-color);
+        }
+        .accordion-item {
+            background-color: transparent;
+            border-color: var(--c-border);
+        }
+
+        .character-card-grid {
+            border: 1px solid var(--c-border);
+            border-radius: .5rem;
+            background-color: var(--c-card);
+            transition: all 0.2s ease;
+            display: flex;
+            flex-direction: column;
+            cursor: pointer;
+            overflow: hidden;
+            height: 100%;
+        }
+        .character-card-grid:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--c-shadow);
+            border-color: var(--primary-color);
+        }
+        .character-grid-img {
+            width: 100%;
+            aspect-ratio: 1 / 1;
+            object-fit: cover;
+            background-color: var(--c-border);
+        }
+
+        .image-gallery {
+            display: flex;
+            flex-wrap: wrap;   /* 允许换行 */
+            gap: 1rem;
+        }
+
+        .gallery-image-wrapper {
+            position: relative;
+            overflow: hidden;
+            border-radius: .25rem;
+            border: 2px solid transparent;
+            box-shadow: var(--c-shadow);
+            aspect-ratio: 1 / 1;
+            background-color: var(--c-border);
+            width: 110px;   /* 固定宽度 */
+            cursor: pointer;
+            transition: border-color 0.2s ease;
+        }
+        
+        .gallery-image-wrapper .selection-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 123, 255, 0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+            font-size: 2rem;
+            color: white;
+        }
+
+        .gallery-image-wrapper.selected {
+            border-color: var(--primary-color);
+        }
+
+        .gallery-image-wrapper.selected .selection-overlay {
+            opacity: 1;
+        }
+
+        .gallery-image-wrapper:hover .gallery-image {
+            filter: brightness(0.9);
+        }
+        
+        .gallery-image-wrapper.selected .gallery-image {
+            filter: brightness(0.8);
+        }
+
+        .gallery-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.2s ease, filter 0.2s ease;
+        }
+        .gallery-image:hover {
+            transform: scale(1.05);
+        }
+        .placeholder-glow .placeholder {
+            min-height: 5rem;
+        }
+        .stat-card {
+            background-color: var(--c-card);
+            border: 1px solid var(--c-border);
+        }
+
+        #rename-char-btn {
+            line-height: 1;
+        }
+        #deleteImageModal {
+            z-index: 13000 !important;
+        }
+        .rename-input-wrapper {
+            position: relative;
+            flex-grow: 1; /* Take available width */
+        }
+        #rename-char-input.form-control-sm {
+            padding-right: 80px; /* Space for buttons */
+        }
+        .rename-input-wrapper .input-buttons {
+            position: absolute;
+            right: 5px;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            gap: 5px;
+        }
+         .rename-input-wrapper .input-buttons .btn {
+            line-height: 1; /* For better vertical alignment of icons */
+        }
+        /* 新增：动漫横向卡片样式 */
+        .anime-row-card {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: color-mix(in srgb, var(--c-card), transparent 40%);
+            border-radius: .75rem;
+            box-shadow: 0 4px 16px var(--c-shadow-lg);
+            border: 1px solid color-mix(in srgb, var(--c-border), transparent 60%);
+            margin-bottom: 1.2rem;
+            padding: 1.2rem 2rem 1.2rem 1.5rem;
+            min-height: 56px;
+            transition: box-shadow 0.2s, border-color 0.2s;
+            cursor: pointer;
+        }
+        .anime-row-card:hover {
+            box-shadow: 0 8px 32px var(--c-shadow-lg), 0 0 20px -5px var(--glow-primary);
+            border-color: var(--primary-color);
+            background: color-mix(in srgb, var(--c-card), transparent 20%);
+        }
+        .anime-row-title {
+            font-size: 1.15rem;
+            font-weight: 600;
+            color: var(--c-text);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            flex: 1 1 auto;
+            min-width: 0;
+        }
+        .anime-row-count {
+            font-size: 1.05rem;
+            font-weight: 500;
+            color: var(--c-text-light);
+            background: rgba(0,0,0,0.08);
+            border-radius: 1rem;
+            padding: 0.25em 1.2em;
+            margin-left: 1.5rem;
+        }
+        /* 新增：动漫角色弹窗样式 */
+        .anime-characters-modal .modal-dialog {
+            max-width: 1200px;
+        }
+        .anime-characters-modal .modal-content {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .anime-characters-modal .character-card-grid {
+            min-width: 180px;
+            max-width: 220px;
+            margin-bottom: 1.2rem;
+        }
+        .anime-characters-modal .modal-body {
+            min-height: 200px;
+        }
+        /* 角色卡片横向扁长矩形样式（单层结构优化） */
+        .character-card-grid.rect {
+            display: flex;
+            align-items: center;
+            flex-direction: row;
+            min-width: 0;
+            width: 100%;
+            height: 46px;
+            background: color-mix(in srgb, var(--c-card), transparent 18%);
+            border-radius: 0.7rem;
+            box-shadow: 0 1px 6px var(--c-shadow);
+            border: 1px solid color-mix(in srgb, var(--c-border), transparent 60%);
+            margin-bottom: 0.7rem;
+            padding: 0.2rem 1rem 0.2rem 0.5rem;
+            transition: box-shadow 0.18s, border-color 0.18s, background 0.18s;
+        }
+        .character-card-grid.rect:hover {
+            box-shadow: 0 4px 16px var(--c-shadow-lg), 0 0 10px -2px var(--glow-primary);
+            border-color: var(--primary-color);
+            background: color-mix(in srgb, var(--c-card), transparent 6%);
+        }
+        .character-card-grid.rect .character-grid-img {
+            width: 38px;
+            height: 38px;
+            aspect-ratio: unset;
+            object-fit: cover;
+            border-radius: 0.45rem;
+            margin-right: 1rem;
+            background-color: var(--c-border);
+        }
+        .character-card-grid.rect .info {
+            flex: 1 1 auto;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        .character-card-grid.rect .info h6 {
+            font-size: 0.98rem;
+            font-weight: 600;
+            margin-bottom: 0.1rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .character-card-grid.rect .info small {
+            color: var(--c-text-light);
+        }
+        /* 角色卡片父容器扁长矩形样式 */
+        .character-card-outer {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 58px;
+            min-height: 0;
+            background: color-mix(in srgb, var(--c-card), transparent 18%);
+            border-radius: .7rem;
+            box-shadow: 0 1px 4px var(--c-shadow);
+            margin-bottom: 1.1rem;
+            padding: 0.2rem 0.2rem;
+        }
+        .character-card-grid.rect {
+            height: 48px;
+            min-height: 0;
+            padding: 0.2rem 1rem 0.2rem 0.2rem;
+        }
+        .character-card-grid.rect .character-grid-img {
+            width: 40px;
+            height: 40px;
+            margin-right: 0.8rem;
+        }
+        .character-card-grid.rect .info h6 {
+            font-size: 0.98rem;
+        }
+        /* 角色卡片横向扁长矩形样式（放大版） */
+        .character-card-grid.rect {
+            display: flex;
+            align-items: center;
+            flex-direction: row;
+            min-width: 0;
+            width: 100%;
+            height: 62px;
+            background: color-mix(in srgb, var(--c-card), transparent 12%);
+            border-radius: 0.85rem;
+            box-shadow: 0 2px 10px var(--c-shadow);
+            border: 1px solid color-mix(in srgb, var(--c-border), transparent 55%);
+            margin-bottom: 1rem;
+            padding: 0.3rem 1.3rem 0.3rem 0.7rem;
+            transition: box-shadow 0.18s, border-color 0.18s, background 0.18s;
+        }
+        .character-card-grid.rect:hover {
+            box-shadow: 0 6px 20px var(--c-shadow-lg), 0 0 12px -2px var(--glow-primary);
+            border-color: var(--primary-color);
+            background: color-mix(in srgb, var(--c-card), transparent 2%);
+        }
+        .character-card-grid.rect .character-grid-img {
+            width: 54px;
+            height: 54px;
+            aspect-ratio: unset;
+            object-fit: cover;
+            border-radius: 0.55rem;
+            margin-right: 1.3rem;
+            background-color: var(--c-border);
+        }
+        .character-card-grid.rect .info {
+            flex: 1 1 auto;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        .character-card-grid.rect .info h6 {
+            font-size: 1.13rem;
+            font-weight: 600;
+            margin-bottom: 0.12rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .character-card-grid.rect .info small {
+            color: var(--c-text-light);
+            font-size: 1.01rem;
+        }
+        /* 复制自manage.html的face-card样式 */
+        .face-card {
+            background: transparent;
+            transition: transform 0.25s ease, box-shadow 0.25s ease;
+            border-radius: .75rem;
+            border: 0.1px solid color-mix(in srgb, var(--c-text), transparent 60%);
+            box-shadow: none;
+            opacity: 1;
+            transform: translateY(0);
+            height: 100%;
+            min-width: 240px;
+            max-width: 480px;
+            width: 100%;
+        }
+        .face-card-img-container img {
+            width: 44px !important;
+            height: 44px !important;
+        }
+        .face-card:hover {
+            transform: translateY(-5px) scale(1.02);
+            box-shadow: 0 8px 16px var(--c-shadow);
+            border-color: var(--accent-color);
+            background: var(--c-card);
+        }
+        .face-card-img-container {
+            flex-shrink: 0;
+            box-shadow: 0 4px 8px var(--c-shadow-lg);
+            border-radius: .5rem;
+        }
+        .truncate {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            display: block;
+            max-width: 180px;
+            width: 100%;
+        }
+        .face-card .fw-bold.mb-0.truncate {
+            margin-bottom: 0.12rem !important;
+        }
+        /* 保证角色图片modal在最前面 */
+        #characterImagesModal {
+            z-index: 12000 !important;
+        }
+        /* 角色卡片图片更大，padding更小 */
+        .face-card {
+            padding: 0.7rem 0.7rem 0.7rem 0.7rem !important;
+        }
+        .face-card-img-container img {
+            width: 62px !important;
+            height: 62px !important;
+        }
+
+        /* 新增：角色图库弹窗左右分栏样式 */
+        #characterImagesModal .modal-dialog {
+            max-width: 1200px; /* Use fixed width instead of vw */
+        }
+
+        #characterImagesModal .modal-content {
+            height: 80vh; /* Adjust height */
+            flex-direction: row; /* Main layout direction */
+        }
+
+        #character-list-sidebar {
+            width: 320px;
+            flex-shrink: 0;
+            border-right: 1px solid var(--c-border);
+            padding: 1rem;
+            overflow-y: auto;
+            background-color: color-mix(in srgb, var(--c-card), transparent 30%);
+        }
+
+        #character-detail-view {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden; /* Prevent content from overflowing */
+        }
+        
+        #character-detail-view .modal-header,
+        #character-detail-view .modal-body,
+        #character-detail-view .modal-footer {
+             width: 100%;
+        }
+
+        #character-detail-view .modal-body {
+            flex-grow: 1;
+            overflow-y: auto;
+        }
+
+        .sidebar-character-item {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            border-radius: .5rem;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            margin-bottom: 10px;
+        }
+        .sidebar-character-item:hover {
+            background-color: var(--c-hover);
+        }
+        .sidebar-character-item.active {
+            background-color: var(--primary-color);
+            color: white;
+            font-weight: bold;
+        }
+        .sidebar-character-item.active .text-muted {
+            color: rgba(255,255,255,0.8) !important;
+        }
+        .sidebar-character-item img {
+            width: 64px;
+            height: 64px;
+            border-radius: .4rem;
+            object-fit: cover;
+            margin-right: 15px;
+        }
+        .sidebar-character-info {
+            overflow: hidden;
+        }
+        .sidebar-character-name {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            font-weight: 600;
+        }
+        .sidebar-character-id {
+            font-size: 0.75rem;
+            color: var(--c-text-light);
+            margin-top: 2px;
+            font-family: monospace;
+        }
+        .sidebar-character-item.active .sidebar-character-id {
+             color: rgba(255,255,255,0.7) !important;
+        }
+
+        .image-count {
+            font-size: 0.8rem;
+            margin-top: 2px;
+        }
+        .sidebar-character-item.active .image-count {
+             color: rgba(255,255,255,0.8) !important;
+        }
+
+        /* 右键菜单样式 */
+        #context-menu {
+            position: fixed;
+            z-index: 15000;
+            background-color: var(--c-card);
+            border: 1px solid var(--c-border);
+            border-radius: .5rem;
+            box-shadow: var(--c-shadow-lg);
+            padding: .5rem 0;
+            min-width: 150px;
+            display: none;
+        }
+        #context-menu .dropdown-item {
+            padding: .5rem 1rem;
+            cursor: pointer;
+        }
+        #context-menu .dropdown-item:hover {
+            background-color: var(--c-hover);
+        }
+        #context-menu .dropdown-divider {
+            margin: .5rem 0;
+            border-top: 1px solid var(--c-border);
+        }
+
+        #character-list-sidebar {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden; /* Hide outer scrollbar */
+            padding: 0; /* Remove padding from parent */
+        }
+        .sidebar-header {
+            padding: 1rem 1rem 0.5rem 1rem;
+            flex-shrink: 0; /* Prevent header from shrinking */
+            border-bottom: 1px solid var(--c-border);
+             background-color: color-mix(in srgb, var(--c-card), transparent 30%); /* Match sidebar bg */
+        }
+        #sidebar-character-list-container {
+            flex-grow: 1;
+            overflow-y: auto; /* Make only this part scrollable */
+            padding: 0.5rem 1rem 1rem 1rem;
+        }
+        #characterImagesModal .modal-content.overlay-active::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 10;
+            border-radius: var(--bs-modal-border-radius);
+            backdrop-filter: blur(2px);
+        }
+
+        .image-gallery-section {
+            margin-bottom: 1.5rem;
+        }
+        .image-gallery-header {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--c-border);
+        }
+
+        /* 新增：拖拽上传区域样式 */
+        #new-char-dropzone {
+            border: 2px dashed var(--c-border);
+            border-radius: .5rem;
+            padding: 2rem;
+            text-align: center;
+            color: var(--c-text-light);
+            cursor: pointer;
+            transition: border-color .2s, background-color .2s;
+        }
+        #new-char-dropzone.drag-over {
+            border-color: var(--primary-color);
+            background-color: color-mix(in srgb, var(--primary-color), transparent 90%);
+        }
+        #new-char-image-preview-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-top: 1rem;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .preview-item {
+            position: relative;
+            width: 80px;
+            height: 80px;
+        }
+        .preview-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: .3rem;
+        }
+        .remove-preview-btn {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            width: 20px;
+            height: 20px;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            border-radius: 50%;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        /* FAB --- Floating Action Button Styles --- */
+        .fab-container {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            z-index: 1050;
+        }
+        .fab-custom {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(45deg, var(--accent-color), var(--primary-color));
+            border: none;
+            border-radius: 50%;
+            color: white;
+            font-size: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2), 0 0 20px var(--glow-primary);
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+        .fab-custom:hover {
+            transform: scale(1.1) rotate(15deg);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3), 0 0 30px var(--glow-accent);
+            cursor: pointer;
+        }
+        .fab-custom:active {
+            transform: scale(0.95);
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+    <!-- 主内容区 -->
+    <div class="container-xl flex-grow-1">
+        <div class="main-container frosted-glass-card mt-4 mb-4 p-4">
+            <h2 class="mb-4">全部角色</h2>
+
+            <!-- Stats Row -->
+            <div id="stats-container" class="row mb-4 g-3">
+                <div class="col-md-4">
+                    <div class="stat-card p-3 rounded h-100 d-flex flex-row align-items-center">
+                        <i class="bi bi-collection-fill fs-2 text-primary opacity-75 me-3"></i>
+                        <div class="text-start">
+                            <h6 class="text-muted mb-1">总作品数</h6>
+                            <h3 id="total-animes-count" class="mb-0 fw-bold">
+                                <span class="fs-6 fw-normal text-muted">加载中...</span>
+                            </h3>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="stat-card p-3 rounded h-100 d-flex flex-row align-items-center">
+                        <i class="bi bi-people-fill fs-2 text-success opacity-75 me-3"></i>
+                        <div class="text-start">
+                            <h6 class="text-muted mb-1">总角色数</h6>
+                            <h3 id="total-characters-count" class="mb-0 fw-bold">
+                                <span class="fs-6 fw-normal text-muted">加载中...</span>
+                            </h3>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="stat-card p-3 rounded h-100 d-flex flex-row align-items-center">
+                        <i class="bi bi-images fs-2 text-info opacity-75 me-3"></i>
+                        <div class="text-start">
+                            <h6 class="text-muted mb-1">总图片数</h6>
+                            <h3 id="total-images-count" class="mb-0 fw-bold">
+                                <span class="fs-6 fw-normal text-muted">加载中...</span>
+                            </h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <input type="text" id="searchInput" class="form-control form-control-lg" placeholder="按动漫名称快速搜索...">
+            </div>
+
+            <div id="gallery-container">
+                <!-- 加载占位符 -->
+                <div id="loading-placeholder">
+                    <div class="d-flex align-items-center justify-content-center my-5">
+                        <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status">
+                            <span class="visually-hidden">正在加载...</span>
+                        </div>
+                        <h4 class="ms-3 mb-0">正在加载角色数据...</h4>
+                    </div>
+                </div>
+                <!-- 动态内容将注入此处 -->
+                 <div class="accordion" id="animeAccordion"></div>
+            </div>
+            <div id="pagination-container" class="d-flex justify-content-center mt-4"></div>
+             <div id="empty-state" class="text-center my-5 d-none">
+                 <i class="bi bi-person-bounding-box" style="font-size: 4rem; color: var(--c-border);"></i>
+                <h4 class="mt-3">数据库中暂无角色</h4>
+                <p class="text-muted">请先通过 "重命名工具" 添加新角色。</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Floating Action Button -->
+    <div class="fab-container">
+        <button id="updateDbBtn" class="fab-custom" title="添加或更新数据">
+            <i class="bi bi-plus-lg"></i>
+        </button>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div class="modal fade" id="deleteImageModal" tabindex="-1" aria-labelledby="deleteImageModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="deleteImageModalLabel">确认删除</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p id="delete-confirmation-text">您确定要永久删除这些图片吗？此操作无法撤销。</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-danger" id="confirmDeleteBtn">确认删除</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Character Images Modal -->
+    <div class="modal fade" id="characterImagesModal" tabindex="-1" aria-labelledby="characterImagesModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content">
+                <!-- 左侧边栏: 角色列表 -->
+                <div id="character-list-sidebar">
+                    <div class="sidebar-header">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0" id="sidebar-title">角色列表</h5>
+                            <button class="btn btn-sm btn-primary" id="add-new-character-btn" title="新增角色">
+                                <i class="bi bi-plus-lg"></i> 新增
+                            </button>
+                        </div>
+                    </div>
+                    <div id="sidebar-character-list-container">
+                        <!-- 角色列表将动态加载到这里 -->
+                    </div>
+                </div>
+
+                <!-- 右侧主视图: 图片详情 -->
+                <div id="character-detail-view">
+                <div class="modal-header">
+                    <div id="modal-title-container" class="d-flex align-items-center flex-grow-1">
+                            <h5 class="modal-title me-2 text-truncate" id="characterImagesModalLabel">选择一个角色以查看图片</h5>
+                            <button class="btn btn-sm btn-outline-secondary d-none" id="rename-char-btn" title="重命名角色">
+                            <i class="bi bi-pencil-fill"></i>
+                        </button>
+                    </div>
+                        <div id="modal-rename-container" class="d-none align-items-center" style="max-width: 50%;">
+                        <div class="rename-input-wrapper">
+                            <input type="text" class="form-control form-control-sm" id="rename-char-input" placeholder="输入新角色名">
+                            <div class="input-buttons">
+                                <button class="btn btn-sm btn-success" type="button" id="save-rename-btn" title="保存"><i class="bi bi-check-lg"></i></button>
+                                <button class="btn btn-sm btn-secondary" type="button" id="cancel-rename-btn" title="取消"><i class="bi bi-x-lg"></i></button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="modal-actions-container" class="ms-auto d-flex align-items-center">
+                        <button class="btn btn-danger" id="delete-selected-btn" disabled>
+                            <i class="bi bi-trash3-fill"></i> 删除选中 (<span id="selected-count">0</span>)
+                        </button>
+                        <button type="button" class="btn-close ms-2" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                </div>
+                <div class="modal-body">
+                        <div id="modal-gallery-content">
+                           <div class="w-100 h-100 d-flex align-items-center justify-content-center text-muted">
+                                <i class="bi bi-arrow-left-circle fs-1 me-3"></i>
+                                <h4>请从左侧选择一个角色</h4>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Toast Container for notifications -->
+    <div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 1100"></div>
+
+    <!-- 右键菜单 -->
+    <div id="context-menu">
+        <a class="dropdown-item" id="context-rename"><i class="bi bi-pencil-fill me-2"></i>重命名</a>
+        <div class="dropdown-divider"></div>
+        <a class="dropdown-item text-danger" id="context-delete"><i class="bi bi-trash3-fill me-2"></i>删除角色</a>
+    </div>
+
+    {% include 'backend/_db_update_preview.html' %}
+
+    <!-- 新增角色模态框 -->
+    <div class="modal fade" id="addNewCharacterModal" tabindex="-1" aria-labelledby="addNewCharacterModalLabel" aria-hidden="true" style="z-index: 13000;">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addNewCharacterModalLabel">新增角色到 <span id="new-char-anime-name" class="fw-bold"></span></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="add-char-form">
+                        <div class="mb-3">
+                            <label for="new-character-name" class="form-label">角色名称</label>
+                            <input type="text" class="form-control" id="new-character-name" required>
+                </div>
+                        <div class="mb-3">
+                            <label for="new-character-image" class="form-label">样本图片 (可多选/拖拽)</label>
+                            <div id="new-char-dropzone">
+                                <i class="bi bi-cloud-arrow-up-fill fs-3"></i>
+                                <p class="mb-0">拖拽图片到此处, 或点击选择</p>
+            </div>
+                            <input class="form-control" type="file" id="new-character-image-input" accept="image/*" multiple hidden>
+        </div>
+                         <div id="new-char-image-preview-container"></div>
+                    </form>
+    </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="submit" class="btn btn-primary" id="add-char-submit-btn" form="add-char-form">
+                         <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                        确认新增
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 已被移除: 动漫角色弹窗不再需要 -->
+{% endblock %}
+
+{% block scripts %}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const galleryContainer = document.getElementById('gallery-container');
+            const loadingPlaceholder = document.getElementById('loading-placeholder');
+            const emptyState = document.getElementById('empty-state');
+            const searchInput = document.getElementById('searchInput');
+            const paginationContainer = document.getElementById('pagination-container');
+            const accordionContainer = document.getElementById('animeAccordion');
+            const statsContainer = document.getElementById('stats-container');
+            
+            let currentOpenCharacterId = null;
+            let currentOpenAnimeName = null;
+            let contextMenuTargetId = null;
+
+            // --- Initial Load ---
+            loadAnimes();
+            loadGlobalStats();
+
+            // Reusable Toast Function
+            function showToast(message, type = 'info', delay = 3500) {
+                const toastContainer = document.querySelector('.toast-container');
+                const toastId = 'toast-' + Date.now();
+                let iconHtml = '';
+                let title = '提示';
+                switch (type) {
+                    case 'success': iconHtml = '<i class="bi bi-check-circle-fill text-success me-2"></i>'; title = '成功'; break;
+                    case 'danger': iconHtml = '<i class="bi bi-exclamation-triangle-fill text-danger me-2"></i>'; title = '错误'; break;
+                    default: iconHtml = '<i class="bi bi-info-circle-fill text-info me-2"></i>'; title = '信息'; break;
+                }
+                const toastHTML = `
+                    <div id="${toastId}" class="toast" role="alert" aria-live="assertive" aria-atomic="true" data-bs-delay="${delay}">
+                        <div class="toast-header">
+                            ${iconHtml} <strong class="me-auto">${title}</strong>
+                            <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+                        </div>
+                        <div class="toast-body">${message}</div>
+                    </div>`;
+                toastContainer.insertAdjacentHTML('beforeend', toastHTML);
+                const toastElement = document.getElementById(toastId);
+                const toast = new bootstrap.Toast(toastElement);
+                toastElement.addEventListener('hidden.bs.toast', () => toastElement.remove());
+                toast.show();
+            }
+
+            // --- Async load for global stats (especially total images) ---
+            function loadGlobalStats() {
+                fetch('/api/admin/gallery/stats')
+                    .then(response => response.json())
+                    .then(data => {
+                        const countElement = document.getElementById('total-images-count');
+                        if (countElement) {
+                            countElement.textContent = (data.total_images || 0).toLocaleString();
+                        }
+                    })
+                    .catch(error => {
+                        console.error('获取图片总数失败:', error);
+                        const countElement = document.getElementById('total-images-count');
+                        if (countElement) {
+                            countElement.innerHTML = '<span class="text-danger small">加载失败</span>';
+                        }
+                    });
+            }
+
+            // --- Debounce for search input ---
+            function debounce(func, delay) {
+                let timeout;
+                return function(...args) {
+                    clearTimeout(timeout);
+                    timeout = setTimeout(() => func.apply(this, args), delay);
+                };
+            }
+
+            // --- Data Loading and Rendering ---
+            function loadAnimes(page = 1, search = '') {
+                loadingPlaceholder.style.display = 'block';
+                accordionContainer.innerHTML = '';
+                emptyState.classList.add('d-none');
+
+                fetch(`/api/admin/gallery/anime_list?page=${page}&search=${encodeURIComponent(search)}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        loadingPlaceholder.style.display = 'none';
+
+                        if (data.animes.length === 0 && search.length > 0) {
+                            accordionContainer.innerHTML = `<div class="text-center p-5 text-muted"><h4>未找到与 "${search}" 相关的作品</h4></div>`;
+                             // 清除分页和主统计数据
+                            paginationContainer.innerHTML = '';
+                            document.getElementById('total-animes-count').textContent = '0';
+                            document.getElementById('total-characters-count').textContent = '0';
+
+                        } else if (data.animes.length === 0) {
+                            emptyState.classList.remove('d-none');
+                             // 清除分页和统计数据
+                            paginationContainer.innerHTML = '';
+                            statsContainer.innerHTML = ''; 
+                        } else {
+                            emptyState.classList.add('d-none');
+                            renderStats(data);
+                            renderPagination(data.total_pages, data.current_page);
+                        }
+
+                        let content = '';
+                        data.animes.forEach((anime, index) => {
+                            content += `
+                                <div class="anime-row-card" data-anime-name="${anime.name}" tabindex="0">
+                                    <span class="anime-row-title" title="${anime.name}">${anime.name}</span>
+                                    <span class="anime-row-count">${anime.count} 角色</span>
+                                </div>`;
+                        });
+                        accordionContainer.innerHTML = content;
+                        renderPagination(data.current_page, data.total_pages, search);
+                    })
+                    .catch(error => {
+                        loadingPlaceholder.style.display = 'none';
+                        accordionContainer.innerHTML = `<div class="alert alert-danger">加载动漫列表失败: ${error}</div>`;
+                    });
+            }
+
+            function renderPagination(currentPage, totalPages, search) {
+                if (totalPages <= 1) {
+                    paginationContainer.innerHTML = '';
+                    return;
+                }
+
+                let content = '<nav><ul class="pagination">';
+                
+                // Previous button
+                content += `<li class="page-item ${currentPage === 1 ? 'disabled' : ''}"><a class="page-link" href="#" data-page="${currentPage - 1}" data-search="${search}">‹</a></li>`;
+
+                const pageLinks = [];
+                
+                // Logic to create a smart pagination, e.g., 1 ... 4 5 6 ... 39
+                const startPage = Math.max(2, currentPage - 2);
+                const endPage = Math.min(totalPages - 1, currentPage + 2);
+
+                // Always add the first page
+                pageLinks.push({ page: 1, text: '1' });
+
+                // Add leading ellipsis if needed
+                if (startPage > 2) {
+                    pageLinks.push({ page: '...', text: '...' });
+                }
+                
+                // Add pages around the current page
+                if (totalPages > 2) {
+                    for (let i = startPage; i <= endPage; i++) {
+                        pageLinks.push({ page: i, text: i.toString() });
+                    }
+                }
+
+                // Add trailing ellipsis if needed
+                if (endPage < totalPages - 1) {
+                     pageLinks.push({ page: '...', text: '...' });
+                }
+
+                // Always add the last page if there is more than one page
+                if (totalPages > 1) {
+                    pageLinks.push({ page: totalPages, text: totalPages.toString() });
+                }
+
+                // Remove duplicates and render
+                const uniquePageLinks = [...new Map(pageLinks.map(item => [item.page, item])).values()];
+
+                uniquePageLinks.forEach(link => {
+                    if (link.page === '...') {
+                        content += '<li class="page-item disabled"><span class="page-link">...</span></li>';
+                    } else {
+                        content += `<li class="page-item ${link.page === currentPage ? 'active' : ''}"><a class="page-link" href="#" data-page="${link.page}" data-search="${search}">${link.text}</a></li>`;
+                    }
+                });
+
+                // Next button
+                content += `<li class="page-item ${currentPage === totalPages ? 'disabled' : ''}"><a class="page-link" href="#" data-page="${currentPage + 1}" data-search="${search}">›</a></li>`;
+                
+                content += '</ul></nav>';
+                paginationContainer.innerHTML = content;
+            }
+
+            function renderStats(data) {
+                const animesCount = document.getElementById('total-animes-count');
+                if (animesCount) {
+                    animesCount.textContent = (data.total_animes || 0).toLocaleString();
+                }
+                const charactersCount = document.getElementById('total-characters-count');
+                if (charactersCount) {
+                    charactersCount.textContent = (data.total_characters || 0).toLocaleString();
+                }
+                 // 图片总数由 loadGlobalStats 异步加载
+            }
+
+            function handleAnimeCharacterLoad(button) {
+                const animeName = button.dataset.animeName;
+                const body = document.querySelector(button.dataset.bsTarget).querySelector('.accordion-body');
+
+                if (!body || button.dataset.loaded === 'true') return;
+                
+                button.dataset.loaded = 'true';
+                body.innerHTML = `<div class="d-flex align-items-center justify-content-center p-3"><div class="spinner-border spinner-border-sm me-2" role="status"></div><span>正在加载角色...</span></div>`;
+
+                fetch(`/api/admin/gallery/characters_by_anime?anime=${encodeURIComponent(animeName)}`)
+                    .then(response => response.json())
+                    .then(characters => {
+                        if (characters.error) {
+                            body.innerHTML = `<div class="p-3 text-danger">${characters.error}</div>`;
+                            return;
+                        }
+                        if (characters.length === 0) {
+                            body.innerHTML = '<div class="p-3 text-muted">该作品下没有角色。</div>';
+                            return;
+                        }
+
+                        let content = '<div class="row g-3 py-3">';
+                        characters.forEach(char => {
+                            content += `
+                            <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6 col-6">
+                                <div class="character-card-grid" data-bs-toggle="modal" data-bs-target="#characterImagesModal" data-character-id="${char.id}" data-character-name="${char.name}">
+                                    <img src="${char.preview_b64 ? 'data:image/jpeg;base64,' + char.preview_b64 : ''}" class="character-grid-img" alt="${char.name}" loading="lazy">
+                                    <div class="p-2 text-center mt-auto">
+                                        <h6 class="mb-0 text-truncate" title="${char.name}">${char.name}</h6>
+                                        <small class="text-muted">${char.image_count} 张图片</small>
+                                    </div>
+                                </div>
+                            </div>
+                            `;
+                        });
+                        content += '</div>';
+                        body.innerHTML = content;
+                    })
+                    .catch(error => {
+                        body.innerHTML = `<div class="p-3 text-danger">加载失败: ${error}</div>`;
+                    });
+            }
+
+            // --- Event Listeners ---
+            const debouncedSearch = debounce(function() {
+                loadAnimes(1, this.value.toLowerCase().trim());
+            }, 300);
+            searchInput.addEventListener('input', debouncedSearch);
+
+            paginationContainer.addEventListener('click', function (e) {
+                if (e.target.tagName === 'A' && e.target.dataset.page) {
+                    e.preventDefault();
+                    const page = parseInt(e.target.dataset.page, 10);
+                    const search = e.target.dataset.search || '';
+                    if (!isNaN(page)) {
+                        loadAnimes(page, search);
+                    }
+                }
+            });
+
+            accordionContainer.addEventListener('click', function(event) {
+                const accordionButton = event.target.closest('.accordion-button');
+                if (accordionButton && !accordionButton.classList.contains('collapsed')) {
+                    handleAnimeCharacterLoad(accordionButton);
+                }
+            });
+
+            // 新增：点击动漫卡片直接打开角色图片详情模态框
+            accordionContainer.addEventListener('click', function(event) {
+                const card = event.target.closest('.anime-row-card');
+                if (card) {
+                    const animeName = card.getAttribute('data-anime-name');
+                    
+                    // 获取角色列表以确定第一个角色
+                    fetch(`/api/admin/gallery/characters_by_anime?anime=${encodeURIComponent(animeName)}`)
+                        .then(response => response.json())
+                        .then(characters => {
+                            if (characters.error) {
+                                showToast(`加载角色失败: ${characters.error}`, 'danger');
+                                return;
+                            }
+                            if (characters.length === 0) {
+                                showToast('该作品下没有角色', 'info');
+                                return;
+                            }
+
+                            const firstChar = characters[0];
+                            const imagesModalInstance = bootstrap.Modal.getOrCreateInstance(document.getElementById('characterImagesModal'));
+
+                            // 手动创建触发事件所需的数据
+                            const relatedTargetData = {
+                                dataset: {
+                                    characterId: firstChar.id,
+                                    characterName: firstChar.name,
+                                    animeName: animeName,
+                                }
+                            };
+                            
+                            // 手动触发 'show.bs.modal' 事件来传递数据并加载内容
+                            const showEvent = new CustomEvent('show.bs.modal', { detail: { relatedTarget: relatedTargetData } });
+                            document.getElementById('characterImagesModal').dispatchEvent(showEvent);
+                            
+                            // 显示模态框
+                            imagesModalInstance.show();
+                        })
+                        .catch(error => {
+                            showToast(`加载角色列表时出错: ${error}`, 'danger');
+                        });
+                }
+            });
+
+            // Delete modal logic
+            const deleteModal = new bootstrap.Modal(document.getElementById('deleteImageModal'));
+            const deleteConfirmBtn = document.getElementById('confirmDeleteBtn');
+            let filesToDelete = [];
+            
+            deleteConfirmBtn.addEventListener('click', function () {
+                if (filesToDelete.length === 0 || !currentOpenCharacterId) return;
+
+                fetch('/api/admin/character_image', {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        character_id: currentOpenCharacterId,
+                        filenames: filesToDelete
+                    }),
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success || data.errors) {
+                        showToast(data.message, data.success ? 'success' : 'danger');
+                        // Force-refresh the gallery modal
+                        const galleryModal = document.getElementById('characterImagesModal');
+                        if (galleryModal.classList.contains('show')) {
+                            // 直接重新加载当前modal内容
+                            const charId = currentOpenCharacterId;
+                            const modalGalleryContent = document.getElementById('modal-gallery-content');
+                            modalGalleryContent.innerHTML = '<div class="w-100 text-center p-5"><div class="spinner-border" style="width: 3rem; height: 3rem;" role="status"><span class="visually-hidden">Loading...</span></div></div>';
+                            fetch(`/api/admin/character_images/${charId}`)
+                                .then(response => response.json())
+                                .then(images => {
+                                    if (images.error) {
+                                        modalGalleryContent.innerHTML = `<div class="alert alert-danger">${images.error}</div>`;
+                                        return;
+                                    }
+                                    let galleryContent = '';
+                                    if (images.length === 0) {
+                                        galleryContent = '<p class="text-muted w-100 text-center">该角色暂无图片样本。</p>';
+                                    } else {
+                                        images.forEach(img => {
+                                            galleryContent += `
+                                            <div class="gallery-image-wrapper" data-filename="${img.filename}" title="${img.filename}">
+                                                <img src="data:image/jpeg;base64,${img.b64}" class="gallery-image" alt="${img.filename}" loading="lazy">
+                                                <div class="selection-overlay">
+                                                    <i class="bi bi-check-circle-fill"></i>
+                                                </div>
+                                            </div>`;
+                                        });
+                                    }
+                                    modalGalleryContent.innerHTML = galleryContent;
+                                    updateSelectionUI();
+                                })
+                                .catch(error => {
+                                    modalGalleryContent.innerHTML = `<div class='alert alert-danger'>加载图片失败: ${error}</div>`;
+                                });
+                        }
+                    } else {
+                        showToast(data.message || '删除失败', 'danger');
+                    }
+                })
+                .catch(error => showToast(`发生错误: ${error}`, 'danger'))
+                .finally(() => {
+                    deleteModal.hide();
+                    filesToDelete = [];
+                });
+            });
+
+            // Character Images modal logic
+            const imagesModalElement = document.getElementById('characterImagesModal');
+            const imagesModal = new bootstrap.Modal(imagesModalElement);
+            const modalGalleryContent = document.getElementById('modal-gallery-content');
+            const sidebarContainer = document.getElementById('sidebar-character-list-container');
+            
+            // Rename UI elements
+            const modalTitleContainer = document.getElementById('modal-title-container');
+            const modalRenameContainer = document.getElementById('modal-rename-container');
+            const renameBtn = document.getElementById('rename-char-btn');
+            const saveRenameBtn = document.getElementById('save-rename-btn');
+            const cancelRenameBtn = document.getElementById('cancel-rename-btn');
+            const renameInput = document.getElementById('rename-char-input');
+            const modalTitleLabel = document.getElementById('characterImagesModalLabel');
+
+            // Selection UI elements
+            const deleteSelectedBtn = document.getElementById('delete-selected-btn');
+            const selectedCountSpan = document.getElementById('selected-count');
+
+            // Context Menu
+            const contextMenu = document.getElementById('context-menu');
+            const contextRenameBtn = document.getElementById('context-rename');
+            const contextDeleteBtn = document.getElementById('context-delete');
+
+
+            function updateSelectionUI() {
+                const selectedItems = modalGalleryContent.querySelectorAll('.gallery-image-wrapper.selected');
+                const count = selectedItems.length;
+                selectedCountSpan.textContent = count;
+                deleteSelectedBtn.disabled = count === 0;
+            }
+
+            function resetModalUI() {
+                modalTitleContainer.classList.remove('d-none');
+                modalRenameContainer.classList.add('d-none');
+                document.getElementById('rename-char-btn').classList.add('d-none');
+                modalTitleLabel.textContent = '选择一个角色以查看图片';
+                modalGalleryContent.innerHTML = `<div class="w-100 h-100 d-flex align-items-center justify-content-center text-muted"><i class="bi bi-arrow-left-circle fs-1 me-3"></i><h4>请从左侧选择一个角色</h4></div>`;
+                updateSelectionUI();
+            }
+
+            function loadCharacterImages(charId, charName) {
+                    currentOpenCharacterId = charId;
+                    
+                    modalTitleLabel.textContent = charName;
+                    modalTitleLabel.title = charName;
+                document.getElementById('rename-char-btn').classList.remove('d-none');
+                
+                    modalGalleryContent.innerHTML = '<div class="w-100 text-center p-5"><div class="spinner-border" style="width: 3rem; height: 3rem;" role="status"><span class="visually-hidden">Loading...</span></div></div>';
+                    
+                // Update active state in sidebar
+                document.querySelectorAll('.sidebar-character-item').forEach(item => {
+                    item.classList.toggle('active', item.dataset.characterId === charId);
+                });
+                    
+                    fetch(`/api/admin/character_images/${charId}`)
+                        .then(response => response.json())
+                    .then(data => {
+                        if (data.error) {
+                            modalGalleryContent.innerHTML = `<div class="alert alert-danger">${data.error}</div>`;
+                                return;
+                            }
+                            
+                            let galleryContent = '';
+                        const hasPending = data.pending && data.pending.length > 0;
+                        const hasExisting = data.existing && data.existing.length > 0;
+
+                        if (!hasPending && !hasExisting) {
+                             modalGalleryContent.innerHTML = '<p class="text-muted w-100 text-center">该角色暂无图片样本。</p>';
+                             return;
+                        }
+
+                        if (hasPending) {
+                                    galleryContent += `
+                                <div class="image-gallery-section">
+                                    <h6 class="image-gallery-header">新增样本 (${data.pending.length})</h6>
+                                    <div class="image-gallery">
+                            `;
+                            data.pending.forEach(img => {
+                                galleryContent += `
+                                <div class="gallery-image-wrapper" data-filename="${img.filename}" data-type="pending" title="${img.filename}">
+                                        <img src="data:image/jpeg;base64,${img.b64}" class="gallery-image" alt="${img.filename}" loading="lazy">
+                                    <div class="selection-overlay"><i class="bi bi-check-circle-fill"></i></div>
+                                    </div>`;
+                                });
+                            galleryContent += '</div></div>';
+                        }
+                        
+                        if (hasExisting) {
+                             galleryContent += `
+                                <div class="image-gallery-section">
+                                    <h6 class="image-gallery-header">已有图片 (${data.existing.length})</h6>
+                                    <div class="image-gallery">
+                            `;
+                            data.existing.forEach(img => {
+                                galleryContent += `
+                                <div class="gallery-image-wrapper" data-filename="${img.filename}" data-type="existing" title="${img.filename}">
+                                    <img src="data:image/jpeg;base64,${img.b64}" class="gallery-image" alt="${img.filename}" loading="lazy">
+                                    <div class="selection-overlay"><i class="bi bi-check-circle-fill"></i></div>
+                                </div>`;
+                            });
+                             galleryContent += '</div></div>';
+                        }
+                        
+                            modalGalleryContent.innerHTML = galleryContent;
+                            updateSelectionUI();
+                        })
+                        .catch(error => {
+                            modalGalleryContent.innerHTML = `<div class="alert alert-danger">加载图片失败: ${error}</div>`;
+                        });
+            }
+
+            function renderSidebar(characters) {
+                 const sidebarHeader = document.getElementById('sidebar-title');
+                 if (!characters || characters.length === 0) {
+                    sidebarContainer.innerHTML = '<div class="p-3 text-muted">该作品下没有角色。</div>';
+                    if (sidebarHeader) sidebarHeader.textContent = '角色列表 (0)';
+                    return;
+                }
+                if (sidebarHeader) sidebarHeader.textContent = `角色列表 (${characters.length})`;
+
+                let sidebarContent = '';
+                characters.forEach(c => {
+                    sidebarContent += `
+                    <div class="sidebar-character-item" data-character-id="${c.id}" data-character-name="${c.name}">
+                        <img src="${c.preview_b64 ? 'data:image/jpeg;base64,' + c.preview_b64 : ''}" alt="${c.name}">
+                        <div class="sidebar-character-info">
+                            <div class="sidebar-character-name">${c.name}</div>
+                            <div class="sidebar-character-id">${c.id}</div>
+                            <small class="text-muted image-count">${c.image_count} 张图片</small>
+                        </div>
+                    </div>
+                    `;
+                });
+                sidebarContainer.innerHTML = sidebarContent;
+            }
+
+            function refreshSidebar(animeName, charToSelect = null) {
+                sidebarContainer.innerHTML = '<div class="w-100 text-center p-5"><div class="spinner-border spinner-border-sm" role="status"></div></div>';
+                fetch(`/api/admin/gallery/characters_by_anime?anime=${encodeURIComponent(animeName)}`)
+                    .then(response => response.json())
+                    .then(characters => {
+                        if (characters.error) {
+                            sidebarContainer.innerHTML = `<div class="p-3 text-danger">${characters.error}</div>`;
+                            return;
+                        }
+                        renderSidebar(characters);
+                        
+                        let charToLoad = null;
+                        if (charToSelect) {
+                            charToLoad = characters.find(c => c.id === charToSelect);
+                        }
+                        // If no specific char to select, or if it wasn't found, load the first one
+                        if (!charToLoad && characters.length > 0) {
+                             charToLoad = characters[0];
+                        }
+
+                        if (charToLoad) {
+                            loadCharacterImages(charToLoad.id, charToLoad.name);
+                        } else {
+                            // No characters left in this anime
+                            resetModalUI();
+                        }
+                    });
+            }
+
+
+            if (imagesModalElement) {
+                imagesModalElement.addEventListener('show.bs.modal', function (event) {
+                    const button = event.relatedTarget || event.detail.relatedTarget;
+                    if (!button) return;
+
+                    // This modal is now primarily triggered by anime-character modal
+                    const charId = button.dataset.characterId;
+                    const charName = button.dataset.characterName;
+                    const animeName = button.dataset.animeName;
+                    currentOpenAnimeName = animeName;
+                    
+                    resetModalUI();
+                    refreshSidebar(animeName, charId);
+
+                });
+
+                // --- Event listeners for modal interactions ---
+                sidebarContainer.addEventListener('click', function(event) {
+                    const item = event.target.closest('.sidebar-character-item');
+                    if (item) {
+                        const charId = item.dataset.characterId;
+                        const charName = item.dataset.characterName;
+                        loadCharacterImages(charId, charName);
+                    }
+                });
+
+                sidebarContainer.addEventListener('contextmenu', function(event) {
+                    const item = event.target.closest('.sidebar-character-item');
+                    if (item) {
+                        event.preventDefault();
+                        contextMenuTargetId = item.dataset.characterId;
+                        contextMenu.style.top = `${event.clientY}px`;
+                        contextMenu.style.left = `${event.clientX}px`;
+                        contextMenu.style.display = 'block';
+                    }
+                });
+
+                document.addEventListener('click', () => {
+                     contextMenu.style.display = 'none';
+                });
+                contextMenu.addEventListener('click', (e) => e.stopPropagation());
+
+                contextRenameBtn.addEventListener('click', function() {
+                    contextMenu.style.display = 'none';
+                    if (contextMenuTargetId) {
+                         // Ensure correct char is loaded before renaming
+                        const targetItem = sidebarContainer.querySelector(`.sidebar-character-item[data-character-id="${contextMenuTargetId}"]`);
+                        if (targetItem) {
+                            if (currentOpenCharacterId !== contextMenuTargetId) {
+                                loadCharacterImages(contextMenuTargetId, targetItem.dataset.characterName);
+                            }
+                            renameBtn.click();
+                        }
+                    }
+                });
+
+                contextDeleteBtn.addEventListener('click', function() {
+                    contextMenu.style.display = 'none';
+                    if (!contextMenuTargetId) return;
+
+                    const targetItem = sidebarContainer.querySelector(`.sidebar-character-item[data-character-id="${contextMenuTargetId}"]`);
+                    const charName = targetItem ? targetItem.dataset.characterName : '该角色';
+
+                    if (confirm(`您确定要永久删除角色 "${charName}" 及其所有图片吗？\n此操作无法撤销！`)) {
+                        fetch('/api/admin/character', {
+                            method: 'DELETE',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ character_id: contextMenuTargetId })
+                        })
+                        .then(res => res.json())
+                        .then(data => {
+                            if (data.success) {
+                                showToast(data.message, 'success');
+                                const wasActive = currentOpenCharacterId === contextMenuTargetId;
+                                
+                                // 1. 从侧边栏移除DOM元素
+                                const itemToRemove = sidebarContainer.querySelector(`.sidebar-character-item[data-character-id="${contextMenuTargetId}"]`);
+                                if (itemToRemove) {
+                                    itemToRemove.remove();
+                                }
+
+                                // 2. 更新角色计数
+                                const sidebarHeader = document.getElementById('sidebar-title');
+                                const currentItems = sidebarContainer.querySelectorAll('.sidebar-character-item');
+                                if (sidebarHeader) {
+                                     sidebarHeader.textContent = `角色列表 (${currentItems.length})`;
+                                }
+                                
+                                // 3. 如果删除的是当前选中的角色，则重新加载第一个角色
+                                if (wasActive) {
+                                    const firstCharItem = sidebarContainer.querySelector('.sidebar-character-item');
+                                    if (firstCharItem) {
+                                        // 触发点击以加载新角色
+                                        firstCharItem.click();
+                                    } else {
+                                        // 列表已空，重置UI
+                                        resetModalUI();
+                                    }
+                                }
+                            } else {
+                                showToast(data.message || '删除失败', 'danger');
+                            }
+                        }).catch(err => showToast(`删除出错: ${err}`, 'danger'));
+                    }
+                });
+
+
+                // Image selection
+                modalGalleryContent.addEventListener('click', function(event) {
+                    const wrapper = event.target.closest('.gallery-image-wrapper');
+                    if (wrapper) {
+                        wrapper.classList.toggle('selected');
+                        updateSelectionUI();
+                    }
+                });
+
+                // Bulk delete
+                deleteSelectedBtn.addEventListener('click', function() {
+                    const selectedItems = modalGalleryContent.querySelectorAll('.gallery-image-wrapper.selected');
+                    const filesToDelete = {
+                        pending: [],
+                        existing: []
+                    };
+                    
+                    selectedItems.forEach(item => {
+                        const type = item.dataset.type;
+                        const filename = item.dataset.filename;
+                        if (type && filename) {
+                            filesToDelete[type].push(filename);
+                        }
+                    });
+
+                    const totalFiles = filesToDelete.pending.length + filesToDelete.existing.length;
+                    if (totalFiles > 0) {
+                        document.getElementById('delete-confirmation-text').textContent = `您确定要永久删除选中的 ${totalFiles} 张图片吗？此操作无法撤销。`;
+                        
+                        // Set up the confirmation button to handle the split deletion
+                        deleteConfirmBtn.onclick = () => {
+                             handleSplitDelete(filesToDelete);
+                             deleteModal.hide();
+                        };
+                        deleteModal.show();
+                    }
+                });
+                
+                // Rename mode
+                renameBtn.addEventListener('click', function() {
+                    modalTitleContainer.classList.add('d-none');
+                    modalRenameContainer.classList.remove('d-none');
+                    renameInput.value = modalTitleLabel.textContent;
+                    renameInput.focus();
+                });
+
+                cancelRenameBtn.addEventListener('click', function() {
+                    modalTitleContainer.classList.remove('d-none');
+                    modalRenameContainer.classList.add('d-none');
+                });
+
+                saveRenameBtn.addEventListener('click', function() {
+                    const newName = renameInput.value.trim();
+                    if (!newName || newName === modalTitleLabel.textContent) {
+                        cancelRenameBtn.click();
+                        return;
+                    }
+
+                    fetch('/api/admin/character/rename', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({ character_id: currentOpenCharacterId, new_name: newName })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            showToast(data.message, 'success');
+                            modalTitleLabel.textContent = data.new_name;
+                            modalTitleLabel.title = data.new_name;
+                            
+                            // Update sidebar item
+                            const sidebarItem = sidebarContainer.querySelector(`.sidebar-character-item[data-character-id="${currentOpenCharacterId}"]`);
+                            if (sidebarItem) {
+                                sidebarItem.querySelector('.sidebar-character-name').textContent = data.new_name;
+                                sidebarItem.dataset.characterName = data.new_name;
+                            }
+                            
+                            // Update the name on the main page card
+                             const mainCard = document.querySelector(`.face-card[data-character-id="${currentOpenCharacterId}"]`);
+                            if (mainCard) {
+                                mainCard.dataset.characterName = data.new_name;
+                                mainCard.querySelector('h6').textContent = data.new_name;
+                            }
+                            cancelRenameBtn.click();
+                        } else {
+                            showToast(data.message || '重命名失败', 'danger');
+                        }
+                    })
+                    .catch(error => showToast(`发生错误: ${error}`, 'danger'));
+                });
+            }
+
+            // Initial Load
+            loadAnimes();
+
+            const addNewCharModalEl = document.getElementById('addNewCharacterModal');
+            const addNewCharModal = new bootstrap.Modal(addNewCharModalEl);
+            const mainModalContent = document.querySelector('#characterImagesModal .modal-content');
+
+             addNewCharModalEl.addEventListener('hide.bs.modal', function() {
+                if (mainModalContent) mainModalContent.classList.remove('overlay-active');
+            });
+
+            const addNewCharBtn = document.getElementById('add-new-character-btn');
+            const addCharForm = document.getElementById('add-char-form');
+            const newCharAnimeNameSpan = document.getElementById('new-char-anime-name');
+            const newCharNameInput = document.getElementById('new-character-name');
+            
+            // 新增角色上传逻辑
+            const dropzone = document.getElementById('new-char-dropzone');
+            const imageInput = document.getElementById('new-character-image-input');
+            const previewContainer = document.getElementById('new-char-image-preview-container');
+            const submitBtn = document.getElementById('add-char-submit-btn');
+            let filesToUpload = [];
+
+            function renderPreviews() {
+                previewContainer.innerHTML = '';
+                filesToUpload.forEach((file, index) => {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const previewItem = document.createElement('div');
+                        previewItem.className = 'preview-item';
+                        previewItem.innerHTML = `
+                            <img src="${e.target.result}" alt="${file.name}">
+                            <button type="button" class="remove-preview-btn" data-index="${index}">&times;</button>
+                        `;
+                        previewContainer.appendChild(previewItem);
+                    }
+                    reader.readAsDataURL(file);
+                });
+            }
+
+            function handleFiles(files) {
+                for (const file of files) {
+                    if (file.type.startsWith('image/')) {
+                        filesToUpload.push(file);
+                    }
+                }
+                renderPreviews();
+            }
+
+            dropzone.addEventListener('click', () => imageInput.click());
+            imageInput.addEventListener('change', () => handleFiles(imageInput.files));
+            dropzone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                dropzone.classList.add('drag-over');
+            });
+            dropzone.addEventListener('dragleave', () => dropzone.classList.remove('drag-over'));
+            dropzone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dropzone.classList.remove('drag-over');
+                handleFiles(e.dataTransfer.files);
+            });
+
+            previewContainer.addEventListener('click', function(e) {
+                if (e.target.classList.contains('remove-preview-btn')) {
+                    const index = parseInt(e.target.dataset.index, 10);
+                    filesToUpload.splice(index, 1);
+                    renderPreviews();
+                }
+            });
+
+            addNewCharModalEl.addEventListener('show.bs.modal', function() {
+                filesToUpload = [];
+                renderPreviews();
+                addCharForm.reset();
+                if (mainModalContent) mainModalContent.classList.add('overlay-active');
+            });
+
+            addNewCharBtn.addEventListener('click', function() {
+                if (currentOpenAnimeName) {
+                    newCharAnimeNameSpan.textContent = currentOpenAnimeName;
+                    filesToUpload = []; // Clear previous files
+                    renderPreviews(); // Clear previous previews
+                    addCharForm.reset();
+                    // Manually add overlay and show modal
+                    if (mainModalContent) mainModalContent.classList.add('overlay-active');
+                    addNewCharModal.show();
+                } else {
+                    showToast('无法确定当前作品，请重新打开图库重试', 'warning');
+                }
+            });
+
+            addCharForm.addEventListener('submit', async function(event) {
+                event.preventDefault();
+                const charName = newCharNameInput.value.trim();
+                
+                if (!charName || filesToUpload.length === 0) {
+                    showToast('请填写角色名称并至少上传一张图片', 'danger');
+                    return;
+                }
+
+                const spinner = submitBtn.querySelector('.spinner-border');
+                submitBtn.disabled = true;
+                spinner.classList.remove('d-none');
+
+                try {
+                    // 1. Create character with the first image
+                    const firstFileBase64 = await toBase64(filesToUpload[0]);
+                    const createResponse = await fetch('/api/admin/create_new_character', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            anime_name: currentOpenAnimeName,
+                            character_name: charName,
+                            image_b64: firstFileBase64
+                        })
+                    });
+
+                    const createData = await createResponse.json();
+                    if (!createData.success) {
+                        throw new Error(createData.message || '创建角色失败');
+                    }
+                    showToast('角色创建成功，正在上传其余样本...', 'info');
+                    const newCharId = createData.new_character_id;
+
+                    // 2. Upload remaining images
+                    if (filesToUpload.length > 1) {
+                        for (let i = 1; i < filesToUpload.length; i++) {
+                            const fileBase64 = await toBase64(filesToUpload[i]);
+                            await fetch('/api/upload_samples', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    character_id: newCharId,
+                                    image_b64: fileBase64
+                                })
+                            });
+                        }
+                    }
+
+                    showToast('所有图片上传完毕!', 'success');
+                    addNewCharModal.hide();
+                    refreshSidebar(currentOpenAnimeName, newCharId);
+
+                } catch (error) {
+                    showToast(error.message, 'danger');
+                } finally {
+                    submitBtn.disabled = false;
+                    spinner.classList.add('d-none');
+                }
+            });
+
+            function toBase64(file) {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.readAsDataURL(file);
+                    reader.onload = () => resolve(reader.result.split(',')[1]);
+                    reader.onerror = error => reject(error);
+                });
+            }
+
+            async function handleSplitDelete(files) {
+                    let finalData = {};
+
+                    try {
+                        if (files.pending.length > 0) {
+                            const response = await fetch('/api/admin/pending_character_image', {
+                                method: 'DELETE',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ character_id: currentOpenCharacterId, filenames: files.pending })
+                            });
+                            const data = await response.json();
+                             Object.assign(finalData, data); // Merge results
+                        }
+
+                        if (files.existing.length > 0) {
+                             const response = await fetch('/api/admin/character_image', {
+                                method: 'DELETE',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ character_id: currentOpenCharacterId, filenames: files.existing })
+                            });
+                            const data = await response.json();
+                             Object.assign(finalData, data); // Merge results
+                        }
+                        
+                        if (finalData.success) {
+                            showToast(finalData.message || '选中的图片已成功删除', 'success');
+                        } else {
+                            showToast(finalData.message || `部分或全部文件删除失败`, 'danger');
+                        }
+
+                    } catch (error) {
+                        showToast(`删除过程中发生错误: ${error}`, 'danger');
+                    } finally {
+                        // Refresh based on final outcome
+                        if (finalData.character_deleted) {
+                            // If character was deleted, refresh the whole sidebar
+                             const itemToRemove = sidebarContainer.querySelector(`.sidebar-character-item[data-character-id="${currentOpenCharacterId}"]`);
+                            if (itemToRemove) itemToRemove.remove();
+
+                            const currentItems = sidebarContainer.querySelectorAll('.sidebar-character-item');
+                            document.getElementById('sidebar-title').textContent = `角色列表 (${currentItems.length})`;
+
+                            const firstCharItem = sidebarContainer.querySelector('.sidebar-character-item');
+                            if (firstCharItem) {
+                                firstCharItem.click();
+                            } else {
+                                resetModalUI();
+                            }
+                        } else {
+                            // Just refresh the current character's images
+                            const activeItem = sidebarContainer.querySelector('.sidebar-character-item.active');
+                            if (activeItem) {
+                                loadCharacterImages(currentOpenCharacterId, activeItem.dataset.characterName);
+                            }
+                        }
+                    }
+                }
+
+            // 已被移除: 不再需要此监听器
+        });
+    </script>
+{% endblock %} 
