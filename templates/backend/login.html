@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录 - {{ config.get('project_name', '动漫人脸识别') }}</title>
+    <link href="https://cdn.staticfile.net/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.geekzu.org/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bs-body-font-family: 'Noto Sans SC', sans-serif;
+            --c-bg: #f0f2f5;
+        }
+        body {
+            background-color: var(--c-bg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+        }
+        .login-card {
+            width: 100%;
+            max-width: 400px;
+            padding: 2rem;
+            border: none;
+            border-radius: .75rem;
+            box-shadow: 0 4px 24px rgba(0,0,0, .08);
+        }
+        .form-control:focus {
+            box-shadow: 0 0 0 .25rem rgba(13, 110, 253, .25);
+        }
+        .alert-container {
+            min-height: 60px; /* Reserve space for alerts to prevent layout shifts */
+        }
+    </style>
+</head>
+<body>
+    <div class="card login-card">
+        <div class="card-body">
+            <h2 class="card-title text-center mb-4">后台管理登录</h2>
+            
+            <div class="alert-container">
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+            </div>
+
+            <form method="POST" action="{{ url_for('auth.login', next=request.args.get('next')) }}">
+                <div class="mb-3">
+                    <label for="username" class="form-label">用户名</label>
+                    <input type="text" class="form-control" id="username" name="username" required autofocus>
+                </div>
+                <div class="mb-3">
+                    <label for="password" class="form-label">密码</label>
+                    <input type="password" class="form-control" id="password" name="password" required>
+                </div>
+                <div class="mb-3 form-check">
+                    <input type="checkbox" class="form-check-input" id="remember" name="remember" value="1">
+                    <label class="form-check-label" for="remember">记住我</label>
+                </div>
+                <div class="d-grid mt-4">
+                    <button type="submit" class="btn btn-primary">登录</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <script src="https://cdn.staticfile.net/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
+</body>
+</html> 
