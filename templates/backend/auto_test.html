@@ -1,0 +1,210 @@
+{% extends "_base.html" %}
+{% block title %}自动测试 - {{ super() }}{% endblock %}
+
+{% block styles %}
+<style>
+    .progress-bar {
+        transition: width 0.3s ease-in-out;
+    }
+    .stat-card {
+        background-color: var(--c-card);
+        border-radius: .75rem;
+        padding: 1.5rem;
+        border: 1px solid var(--c-border);
+        transition: all 0.2s ease;
+    }
+    .stat-card h5 {
+        color: var(--c-text);
+        font-weight: 700;
+        font-size: 1rem;
+    }
+    .stat-card .display-5 {
+        font-weight: 700;
+        color: var(--primary-color);
+    }
+    .stat-card .text-muted {
+         color: var(--c-text) !important;
+         opacity: 0.7;
+    }
+    #results-table th {
+        white-space: nowrap;
+    }
+    .text-purple {
+        color: #6f42c1;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2"><i class="bi bi-robot me-2"></i>模型自动测试</h1>
+        <div class="btn-toolbar mb-2 mb-md-0">
+            <button id="start-test-btn" type="button" class="btn btn-primary"><i class="bi bi-play-circle-fill me-2"></i>开始测试</button>
+        </div>
+    </div>
+
+    <!-- Overall Stats -->
+    <div class="row mb-4">
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="stat-card h-100 shadow-sm">
+                <h5><i class="bi bi-bullseye me-2 text-purple"></i>整体召回率 (基于标注)</h5>
+                <p class="display-5" id="recall-accuracy">0.00%</p>
+                <p class="text-muted mb-0" id="recall-stats">正确 0 / 标注总数 0</p>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="stat-card h-100 shadow-sm">
+                <h5><i class="bi bi-check-circle-fill me-2 text-success"></i>整体精确率 (基于检测)</h5>
+                <p class="display-5" id="precision-accuracy">0.00%</p>
+                <p class="text-muted mb-0" id="precision-stats">正确 0 / 检测总数 0</p>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="stat-card h-100 shadow-sm">
+                <h5><i class="bi bi-aspect-ratio-fill me-2 text-info"></i>正常分辨率精确率</h5>
+                <p class="display-5" id="normal-res-accuracy">0.00%</p>
+                <p class="text-muted mb-0" id="normal-res-stats">正确 0 / 检测数 0</p>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="stat-card h-100 shadow-sm">
+                <h5><i class="bi bi-arrows-angle-contract me-2 text-warning"></i>低分辨率精确率</h5>
+                <p class="display-5" id="low-res-accuracy">0.00%</p>
+                <p class="text-muted mb-0" id="low-res-stats">正确 0 / 检测数 0</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Progress Bar -->
+    <div class="mb-4">
+        <div class="progress" style="height: 25px;">
+            <div id="progress-bar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
+        </div>
+        <div id="progress-text" class="text-center mt-2 text-muted">等待开始...</div>
+    </div>
+
+    <!-- Results Table -->
+    <div class="card shadow-sm">
+        <div class="card-header">
+            <h5 class="mb-0">详细结果</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table id="results-table" class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>动漫作品</th>
+                            <th>图片数</th>
+                            <th>标注人脸数</th>
+                            <th>正确识别数</th>
+                            <th>召回率</th>
+                            <th>低分辨率精确率</th>
+                            <th>正常分辨率精确率</th>
+                        </tr>
+                    </thead>
+                    <tbody id="results-tbody">
+                        <!-- Results will be populated here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+$(document).ready(function() {
+    let eventSource;
+
+    function fetchTestInfo() {
+        $.get('/api/admin/auto_test_info', function(data) {
+            $('#progress-text').text(`准备就绪，待测试 ${data.total_animes} 个作品，共 ${data.total_files} 张图片。`);
+        });
+    }
+
+    function startTest() {
+        if (eventSource) {
+            eventSource.close();
+        }
+        
+        // Reset UI
+        $('#progress-bar').css('width', '0%').attr('aria-valuenow', 0).text('0%');
+        $('#progress-text').text('正在初始化测试...');
+        $('#results-tbody').empty();
+        $('.display-5').text('0.00%');
+        $('#recall-stats').text('正确 0 / 标注总数 0');
+        $('#precision-stats').text('正确 0 / 检测总数 0');
+        $('#normal-res-stats').text('正确 0 / 检测数 0');
+        $('#low-res-stats').text('正确 0 / 检测数 0');
+        $('#start-test-btn').prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> 测试中...');
+
+        eventSource = new EventSource('/api/admin/auto_test');
+
+        eventSource.onmessage = function(event) {
+            const data = JSON.parse(event.data);
+            
+            // Update progress bar
+            $('#progress-bar').css('width', data.progress + '%').attr('aria-valuenow', data.progress).text(data.progress + '%');
+            $('#progress-text').text(`正在处理... ${data.progress}% 完成`);
+
+            // Update overall stats
+            const overall = data.overall;
+            const recallAcc = overall.recall_total_gt > 0 ? (overall.recall_total_correct / overall.recall_total_gt * 100).toFixed(2) : 0;
+            const precisionAcc = overall.precision_total_detected > 0 ? (overall.precision_total_correct / overall.precision_total_detected * 100).toFixed(2) : 0;
+            const normalResAcc = overall.normal_res_detected > 0 ? (overall.normal_res_correct / overall.normal_res_detected * 100).toFixed(2) : 0;
+            const lowResAcc = overall.low_res_detected > 0 ? (overall.low_res_correct / overall.low_res_detected * 100).toFixed(2) : 0;
+
+            $('#recall-accuracy').text(recallAcc + '%');
+            $('#recall-stats').text(`正确 ${overall.recall_total_correct} / 标注总数 ${overall.recall_total_gt}`);
+
+            $('#precision-accuracy').text(precisionAcc + '%');
+            $('#precision-stats').text(`正确 ${overall.precision_total_correct} / 检测总数 ${overall.precision_total_detected}`);
+            
+            $('#normal-res-accuracy').text(normalResAcc + '%');
+            $('#normal-res-stats').text(`正确 ${overall.normal_res_correct} / 检测数 ${overall.normal_res_detected}`);
+            
+            $('#low-res-accuracy').text(lowResAcc + '%');
+            $('#low-res-stats').text(`正确 ${overall.low_res_correct} / 检测数 ${overall.low_res_detected}`);
+
+            // Update table
+            const tbody = $('#results-tbody');
+            tbody.empty(); // Redraw table on each update for simplicity
+            for (const anime in data.animes) {
+                const stats = data.animes[anime];
+                const row = `
+                    <tr>
+                        <td><strong>${anime}</strong></td>
+                        <td>${stats.files}</td>
+                        <td>${stats.gt_total}</td>
+                        <td>${stats.correct}</td>
+                        <td>${stats.recall_accuracy}%</td>
+                        <td>${stats.low_res_precision}% (${stats.low_res_correct}/${stats.low_res_detected})</td>
+                        <td>${stats.normal_res_precision}% (${stats.normal_res_correct}/${stats.normal_res_detected})</td>
+                    </tr>
+                `;
+                tbody.append(row);
+            }
+
+            if (data.done) {
+                eventSource.close();
+                $('#progress-text').text('测试完成！');
+                $('#start-test-btn').prop('disabled', false).html('<i class="bi bi-play-circle-fill me-2"></i>重新测试');
+            }
+        };
+
+        eventSource.onerror = function() {
+            console.error("EventSource failed.");
+            $('#progress-text').text('连接错误，测试中断。');
+            $('#start-test-btn').prop('disabled', false).html('<i class="bi bi-play-circle-fill me-2"></i>重新测试');
+            eventSource.close();
+        };
+    }
+
+    $('#start-test-btn').click(startTest);
+
+    fetchTestInfo();
+});
+</script>
+{% endblock %} 
