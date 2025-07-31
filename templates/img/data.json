@@ -1,0 +1,23 @@
+{
+    "developer1":{
+        "img": "1.jpg",
+        "name": "~"
+    },
+    "developer2":{
+        "img": "2.jpg",
+        "name": "akua"
+    },
+    "developer3":{
+        "img": "3.jpg",
+        "name": "莫寒冷清"
+    },
+    "developer4":{
+        "img": "4.jpg",
+        "name": "青丝染霜"
+    },
+    "developer5":{
+        "img": "5.jpg",
+        "name": "CNLonely",
+        "status":"developer"
+    }
+}
