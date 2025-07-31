@@ -251,6 +251,9 @@
                 <button class="nav-link text-start" id="v-pills-about-tab" data-bs-toggle="pill" data-bs-target="#v-pills-about" type="button" role="tab" aria-controls="v-pills-about" aria-selected="false">
                     <i class="bi bi-award-fill me-2"></i>  项目引用
                 </button>
+                <button class="nav-link text-start" id="v-pills-update-tab" data-bs-toggle="pill" data-bs-target="#v-pills-update" type="button" role="tab" aria-controls="v-pills-update" aria-selected="false">
+                    <i class="bi bi-arrow-clockwise me-2"></i> 系统更新
+                </button>
             </div>
         </div>
 
@@ -626,6 +629,164 @@
                     </div>
                 </div>
 
+                <!-- Update Pane -->
+                <div class="tab-pane fade" id="v-pills-update" role="tabpanel" aria-labelledby="v-pills-update-tab">
+                    <div class="frosted-glass-card p-4">
+                        <h3 class="mb-4">系统更新</h3>
+                        
+                        <!-- 当前版本信息 -->
+                        <div class="mb-4">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h5 class="card-title"><i class="bi bi-info-circle me-2"></i>当前版本信息</h5>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <p class="mb-1"><strong>当前版本:</strong> <span id="current-version" class="badge bg-primary">加载中...</span></p>
+                                            <p class="mb-1"><strong>GitHub仓库:</strong> <span id="github-repo" class="text-muted">加载中...</span></p>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <p class="mb-1"><strong>最后检查:</strong> <span id="last-check" class="text-muted">未检查</span></p>
+                                            <p class="mb-0"><strong>更新状态:</strong> <span id="update-status" class="badge bg-secondary">未知</span></p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 检查更新按钮 -->
+                        <div class="mb-4">
+                            <button class="btn btn-primary" id="check-update-btn">
+                                <i class="bi bi-search me-2"></i>检查更新
+                            </button>
+                            <button class="btn btn-outline-secondary ms-2" id="refresh-status-btn">
+                                <i class="bi bi-arrow-clockwise me-2"></i>刷新状态
+                            </button>
+                        </div>
+
+                        <!-- 更新信息 -->
+                        <div id="update-info" class="mb-4" style="display: none;">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="mb-0"><i class="bi bi-download me-2"></i>可用更新</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row mb-3">
+                                        <div class="col-md-6">
+                                            <p><strong>新版本:</strong> <span id="new-version" class="badge bg-success"></span></p>
+                                            <p><strong>更新大小:</strong> <span id="update-size"></span></p>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <p><strong>需要更新文件:</strong> <span id="files-count"></span> 
+                                                <button class="btn btn-sm btn-outline-info ms-2" id="view-files-btn" title="查看需要更新的文件">
+                                                    <i class="bi bi-eye me-1"></i>查看文件
+                                                </button>
+                                            </p>
+                                            <p><strong>预计时间:</strong> <span id="estimated-time"></span></p>
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label"><strong>更新说明:</strong></label>
+                                        <div id="update-notes" class="border rounded p-3 bg-light" style="max-height: 200px; overflow-y: auto;"></div>
+                                    </div>
+                                    <button class="btn btn-success" id="perform-update-btn">
+                                        <i class="bi bi-download me-2"></i>开始更新
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 更新进度 -->
+                        <div id="update-progress" class="mb-4" style="display: none;">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="mb-0"><i class="bi bi-arrow-clockwise me-2"></i>更新进度</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="progress mb-3">
+                                        <div class="progress-bar progress-bar-striped progress-bar-animated" id="progress-bar" role="progressbar" style="width: 0%"></div>
+                                    </div>
+                                    <p id="progress-message" class="text-muted">准备更新...</p>
+                                    <button class="btn btn-outline-secondary" id="cancel-update-btn" disabled>
+                                        <i class="bi bi-x-circle me-2"></i>取消更新
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 更新结果 -->
+                        <div id="update-result" class="mb-4" style="display: none;">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="mb-0"><i class="bi bi-check-circle me-2"></i>更新结果</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div id="result-content"></div>
+                                    <div class="mt-3">
+                                        <button class="btn btn-primary" id="restart-app-btn">
+                                            <i class="bi bi-arrow-clockwise me-2"></i>重启应用
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 更新历史 -->
+                        <div class="mb-4">
+                            <h5><i class="bi bi-clock-history me-2"></i>更新历史</h5>
+                            <div id="update-history" class="list-group">
+                                <div class="text-center p-4 text-muted">
+                                    <div class="spinner-border spinner-border-sm" role="status"></div>
+                                    <span class="ms-2">加载中...</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- 文件列表模态框 -->
+    <div class="modal fade" id="filesModal" tabindex="-1" aria-labelledby="filesModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="filesModalLabel">
+                        <i class="bi bi-file-earmark-text me-2"></i>需要更新的文件列表
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="text-muted">共 <span id="total-files-count">0</span> 个文件需要更新</span>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="show-details-switch">
+                                <label class="form-check-label" for="show-details-switch">显示详细信息</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>文件路径</th>
+                                    <th>操作</th>
+                                    <th>原因</th>
+                                    <th class="details-column" style="display: none;">大小</th>
+                                    <th class="details-column" style="display: none;">类别</th>
+                                </tr>
+                            </thead>
+                            <tbody id="files-table-body">
+                                <!-- 文件列表将通过JavaScript动态填充 -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                </div>
             </div>
         </div>
     </div>
@@ -1372,6 +1533,290 @@ document.addEventListener('DOMContentLoaded', function() {
             initCitations();
         }
         $(aboutTab).one('shown.bs.tab', initCitations);
+    }
+
+    // --- Update System Logic ---
+    let updateProgressInterval = null;
+    let currentUpdateData = null; // 存储当前更新数据
+
+    function loadUpdateStatus() {
+        fetch('/api/admin/update/status')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    $('#current-version').text(data.current_version).removeClass('bg-secondary').addClass('bg-primary');
+                    $('#github-repo').text(data.github_repo);
+                    $('#last-check').text(data.last_check);
+                    $('#update-status').text('就绪').removeClass('bg-secondary bg-warning bg-success').addClass('bg-info');
+                } else {
+                    $('#update-status').text('错误').removeClass('bg-secondary bg-info bg-success').addClass('bg-warning');
+                }
+            })
+            .catch(error => {
+                $('#update-status').text('连接失败').removeClass('bg-secondary bg-info bg-success').addClass('bg-danger');
+            });
+    }
+
+    function loadUpdateHistory() {
+        fetch('/api/admin/update/history')
+            .then(response => response.json())
+            .then(data => {
+                const historyContainer = $('#update-history');
+                if (data.success && data.history.length > 0) {
+                    const historyHtml = data.history.map(update => `
+                        <div class="list-group-item">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <h6 class="mb-1">版本 ${update.version}</h6>
+                                    <p class="mb-1 text-muted">${update.notes}</p>
+                                    <small class="text-muted">${update.date}</small>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('');
+                    historyContainer.html(historyHtml);
+                } else {
+                    historyContainer.html('<div class="text-center p-4 text-muted">暂无更新历史</div>');
+                }
+            })
+            .catch(error => {
+                $('#update-history').html('<div class="text-center p-4 text-danger">加载更新历史失败</div>');
+            });
+    }
+
+    function checkForUpdates() {
+        const btn = $('#check-update-btn');
+        btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status"></span> 检查中...');
+        
+        fetch('/api/admin/update/check')
+            .then(response => response.json())
+            .then(data => {
+                if (data.has_update) {
+                    // 保存更新数据
+                    currentUpdateData = data;
+                    
+                    // 显示更新信息
+                    $('#new-version').text(data.remote_version);
+                    $('#update-size').text(`${data.update_size_mb} MB`);
+                    $('#files-count').text(`${data.files_to_update.length} 个文件`);
+                    $('#estimated-time').text(`${Math.ceil(data.update_size_mb / 2)} 分钟`);
+                    $('#update-notes').html(data.update_notes.replace(/\n/g, '<br>'));
+                    
+                    $('#update-info').show();
+                    $('#update-status').text('有可用更新').removeClass('bg-secondary bg-info bg-success').addClass('bg-warning');
+                    
+                    showToast(`发现新版本 ${data.remote_version}`, 'info');
+                } else {
+                    currentUpdateData = null;
+                    $('#update-info').hide();
+                    $('#update-status').text('已是最新版本').removeClass('bg-secondary bg-info bg-warning').addClass('bg-success');
+                    showToast(data.message || '已是最新版本', 'success');
+                }
+            })
+            .catch(error => {
+                currentUpdateData = null;
+                showToast('检查更新失败', 'danger');
+                $('#update-status').text('检查失败').removeClass('bg-secondary bg-info bg-success').addClass('bg-danger');
+            })
+            .finally(() => {
+                btn.prop('disabled', false).html('<i class="bi bi-search me-2"></i>检查更新');
+            });
+    }
+
+    function startUpdate() {
+        $('#update-info').hide();
+        $('#update-progress').show();
+        $('#update-result').hide();
+        
+        const progressBar = $('#progress-bar');
+        const progressMessage = $('#progress-message');
+        
+        // 重置进度
+        progressBar.css('width', '0%').text('0%');
+        progressMessage.text('准备更新...');
+        
+        // 开始更新
+        fetch('/api/admin/update/perform', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // 开始轮询进度
+                updateProgressInterval = setInterval(pollUpdateProgress, 1000);
+            } else {
+                throw new Error(data.error || '启动更新失败');
+            }
+        })
+        .catch(error => {
+            showToast(`更新失败: ${error.message}`, 'danger');
+            $('#update-progress').hide();
+            $('#update-info').show();
+        });
+    }
+
+    function pollUpdateProgress() {
+        fetch('/api/admin/update/progress')
+            .then(response => response.json())
+            .then(data => {
+                const progressBar = $('#progress-bar');
+                const progressMessage = $('#progress-message');
+                
+                progressBar.css('width', `${data.progress}%`).text(`${Math.round(data.progress)}%`);
+                progressMessage.text(data.message);
+                
+                if (!data.is_updating && data.result) {
+                    // 更新完成
+                    clearInterval(updateProgressInterval);
+                    updateProgressInterval = null;
+                    
+                    showUpdateResult(data.result);
+                }
+            })
+            .catch(error => {
+                console.error('轮询更新进度失败:', error);
+            });
+    }
+
+    function showUpdateResult(result) {
+        $('#update-progress').hide();
+        $('#update-result').show();
+        
+        const resultContent = $('#result-content');
+        
+        if (result.success) {
+            resultContent.html(`
+                <div class="alert alert-success">
+                    <h6><i class="bi bi-check-circle me-2"></i>更新成功</h6>
+                    <p class="mb-1">成功更新 ${result.updated_files} 个文件</p>
+                    <p class="mb-0">新版本: ${result.new_version}</p>
+                </div>
+            `);
+            
+            showToast('更新完成，请重启应用', 'success');
+        } else {
+            resultContent.html(`
+                <div class="alert alert-danger">
+                    <h6><i class="bi bi-x-circle me-2"></i>更新失败</h6>
+                    <p class="mb-0">${result.error}</p>
+                </div>
+            `);
+            
+            showToast('更新失败', 'danger');
+        }
+    }
+
+
+
+    function restartApp() {
+        if (confirm('确定要重启应用吗？重启后需要重新登录。')) {
+            showToast('正在重启应用...', 'info');
+            setTimeout(() => {
+                window.location.reload();
+            }, 2000);
+        }
+    }
+
+    function showFilesList() {
+        if (!currentUpdateData || !currentUpdateData.files_to_update) {
+            showToast('没有可用的文件列表', 'warning');
+            return;
+        }
+
+        const files = currentUpdateData.files_to_update;
+        const tableBody = $('#files-table-body');
+        const totalCount = $('#total-files-count');
+
+        // 更新总数
+        totalCount.text(files.length);
+
+        // 清空表格
+        tableBody.empty();
+
+        // 填充文件列表
+        files.forEach(file => {
+            const row = `
+                <tr>
+                    <td>
+                        <code class="text-primary">${file.path}</code>
+                    </td>
+                    <td>
+                        <span class="badge ${file.action === 'download' ? 'bg-success' : 'bg-warning'}">
+                            ${file.action === 'download' ? '下载' : '更新'}
+                        </span>
+                    </td>
+                    <td>
+                        <small class="text-muted">${file.reason}</small>
+                    </td>
+                    <td class="details-column" style="display: none;">
+                        <small>${formatFileSize(file.size)}</small>
+                    </td>
+                    <td class="details-column" style="display: none;">
+                        <span class="badge bg-secondary">${getFileCategory(file.path)}</span>
+                    </td>
+                </tr>
+            `;
+            tableBody.append(row);
+        });
+
+        // 显示模态框
+        const modal = new bootstrap.Modal(document.getElementById('filesModal'));
+        modal.show();
+    }
+
+    function formatFileSize(bytes) {
+        if (bytes === 0) return '0 B';
+        const k = 1024;
+        const sizes = ['B', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
+    function getFileCategory(filePath) {
+        const ext = filePath.split('.').pop().toLowerCase();
+        const path = filePath.toLowerCase();
+        
+        if (path.includes('controller')) return 'controllers';
+        if (path.includes('service')) return 'services';
+        if (path.includes('core')) return 'core';
+        if (ext === 'py') return 'python';
+        if (['html', 'css', 'js'].includes(ext)) return 'frontend';
+        if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) return 'images';
+        if (['json', 'yaml', 'yml'].includes(ext)) return 'config';
+        if (['pt', 'pth', 'onnx', 'bin'].includes(ext)) return 'models';
+        
+        return 'other';
+    }
+
+    // 绑定事件
+    $('#check-update-btn').on('click', checkForUpdates);
+    $('#refresh-status-btn').on('click', () => {
+        loadUpdateStatus();
+        loadUpdateHistory();
+    });
+    $('#perform-update-btn').on('click', startUpdate);
+    $('#restart-app-btn').on('click', restartApp);
+    $('#view-files-btn').on('click', showFilesList);
+    
+    // 详细信息切换
+    $('#show-details-switch').on('change', function() {
+        const showDetails = this.checked;
+        $('.details-column').toggle(showDetails);
+    });
+
+    // 初始化更新标签页
+    const updateTab = document.getElementById('v-pills-update-tab');
+    if (updateTab) {
+        const initUpdate = () => {
+            loadUpdateStatus();
+            loadUpdateHistory();
+        };
+        
+        if(window.location.hash === '#v-pills-update-tab') {
+            initUpdate();
+        }
+        $(updateTab).one('shown.bs.tab', initUpdate);
     }
 });
 </script>
