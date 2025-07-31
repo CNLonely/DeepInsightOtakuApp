@@ -1,0 +1,217 @@
+{% extends "_bass_front.html" %}
+
+{% block title %}使用趋势分析 - {{ config.project_name }}{% endblock %}
+
+{% block styles %}
+<style>
+    .content-wrapper {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex-grow: 1;
+        padding: 2rem;
+    }
+    .chart-card {
+        width: 80%;
+        max-width: 800px;
+        height: 400px;
+        min-width: 0;
+        
+        display: flex;
+        flex-direction: column;
+
+        background: color-mix(in srgb, var(--c-card), transparent calc(100% - (var(--glass-bg-opacity, 0.5) * 100%)));
+        backdrop-filter: blur(20px) saturate(180%);
+        border-radius: 1rem;
+        border: 1px solid color-mix(in srgb, var(--c-border), transparent 60%);
+        box-shadow: 0 12px 40px -10px rgba(0, 0, 0, 0.2);
+        cursor: ns-resize;
+    }
+    .card-header {
+        padding: 1.25rem 2rem;
+        border-bottom: 1px solid color-mix(in srgb, var(--c-border), transparent 80%);
+    }
+    .chart-title {
+        color: var(--c-text);
+        font-weight: 600;
+    }
+    .card-body {
+        padding: 1.5rem;
+        flex-grow: 1;
+        position: relative;
+    }
+    .chart-container {
+        position: absolute;
+        top: 1.5rem;
+        left: 1.5rem;
+        right: 1.5rem;
+        bottom: 1.5rem;
+    }
+
+    /* Loader Animation */
+    .loader-wrapper {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 10;
+        transition: opacity 0.3s ease-in-out;
+    }
+    .spinner {
+        border: 4px solid color-mix(in srgb, var(--primary-color), transparent 80%);
+        border-radius: 50%;
+        border-top: 4px solid var(--primary-color);
+        width: 50px;
+        height: 50px;
+        animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="content-wrapper">
+    <div class="chart-card" id="chart-card">
+        <div class="card-header text-center">
+            <h4 class="chart-title mb-0">过去 <span id="hours-display">6</span> 小时使用统计</h4>
+        </div>
+        <div class="card-body">
+            <div class="chart-container">
+                <div class="loader-wrapper">
+                    <div class="spinner"></div>
+                </div>
+                <canvas id="hourly-chart" style="visibility: hidden;"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+    $(document).ready(function() {
+        setTimeout(function() {
+            const ctx = document.getElementById('hourly-chart').getContext('2d');
+            const chartCard = $('#chart-card');
+            const hoursDisplay = $('#hours-display');
+            const loader = $('.loader-wrapper');
+            const canvas = $('#hourly-chart');
+            
+            let currentHours = 6;
+            let debounceTimer;
+
+            const rootStyles = getComputedStyle(document.documentElement);
+            const primaryColor = rootStyles.getPropertyValue('--primary-color').trim() || '#0d6efd';
+            const textColor = rootStyles.getPropertyValue('--c-text').trim() || '#212529';
+            
+            function colorToRgba(color, alpha = 1) {
+                const tempDiv = document.createElement('div');
+                tempDiv.style.color = color;
+                document.body.appendChild(tempDiv);
+                const computedColor = getComputedStyle(tempDiv).color;
+                document.body.removeChild(tempDiv);
+                const [r, g, b] = computedColor.match(/\d+/g);
+                return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+            }
+            
+            const gridColor = colorToRgba(textColor, 0.1);
+            const gradient = ctx.createLinearGradient(0, 0, 0, 450);
+            gradient.addColorStop(0, colorToRgba(primaryColor, 0.35));
+            gradient.addColorStop(1, colorToRgba(primaryColor, 0.05));
+
+            const hourlyChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: '识别次数',
+                        data: [],
+                        borderColor: primaryColor,
+                        backgroundColor: gradient,
+                        fill: true,
+                        tension: 0.4,
+                        borderWidth: 2.5,
+                        pointRadius: 2,
+                        pointBackgroundColor: primaryColor,
+                        pointBorderColor: 'rgba(255,255,255,0)',
+                        pointHoverRadius: 7,
+                        pointHoverBackgroundColor: '#fff',
+                        pointHoverBorderColor: primaryColor,
+                        pointHoverBorderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { beginAtZero: true, ticks: { color: textColor, precision: 0 }, grid: { color: gridColor, drawBorder: false } },
+                        x: { ticks: { color: textColor }, grid: { display: false } }
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            callbacks: { label: (context) => ` ${context.dataset.label}: ${context.parsed.y} 次` }
+                        }
+                    },
+                    animation: { duration: 400, easing: 'easeOutQuart' }
+                }
+            });
+
+            function fetchHourlyStats(hours) {
+                loader.css({ 'opacity': 1, 'pointer-events': 'auto' });
+                canvas.css('visibility', 'hidden');
+
+                $.getJSON("{{ url_for('statistics.hourly_data') }}?hours=" + hours)
+                    .done(function(data) {
+                        if (data && data.labels && data.data) {
+                            hourlyChart.data.labels = data.labels;
+                            hourlyChart.data.datasets[0].data = data.data;
+                            hourlyChart.update();
+                        }
+                    })
+                    .fail(function() {
+                        console.error("无法获取每小时统计数据。");
+                    })
+                    .always(function() {
+                        // Fade out loader and disable its mouse events
+                        loader.css({ 'opacity': 0, 'pointer-events': 'none' });
+                        canvas.css('visibility', 'visible');
+                    });
+            }
+
+            chartCard.on('wheel', function(event) {
+                event.preventDefault();
+
+                if (event.originalEvent.deltaY < 0) {
+                    currentHours++;
+                } else {
+                    currentHours--;
+                }
+                
+                currentHours = Math.max(6, Math.min(24, currentHours));
+                hoursDisplay.text(currentHours);
+
+                clearTimeout(debounceTimer);
+                debounceTimer = setTimeout(() => {
+                    fetchHourlyStats(currentHours);
+                }, 150);
+            });
+
+            // Initial Load
+            fetchHourlyStats(currentHours);
+        }, 100); 
+    });
+</script>
+{% endblock %} 
