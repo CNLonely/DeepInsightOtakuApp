@@ -1,0 +1,496 @@
+<!-- 
+    This is a reusable component for previewing database updates.
+    It includes the modal HTML structure and all the necessary JavaScript logic.
+    To use it, simply include it in your parent template like this:
+-->
+
+<style>
+    /* Scoped styles for the DB Update Preview component */
+    #updatePreviewModal .group-header {
+        font-size: 1.1rem;
+        font-weight: 500;
+        color: var(--c-text-light);
+        border-bottom: 1px solid var(--c-border-light);
+        padding-bottom: 0.5rem;
+        margin-bottom: 1rem;
+    }
+    .preview-wrapper.collapsed .preview-img-container:nth-child(n+13) {
+        display: none;
+    }
+    .preview-thumb {
+        width: 48px;
+        height: 48px;
+        object-fit: cover;
+        border-radius: .25rem;
+        border: 1px solid var(--c-border-light);
+    }
+    .preview-img-container {
+        position: relative;
+    }
+    .preview-img-container .delete-img-btn {
+        position: absolute;
+        top: -5px;
+        right: -5px;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background-color: rgba(220, 53, 69, 0.8);
+        color: white;
+        border: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        line-height: 1;
+        cursor: pointer;
+        opacity: 0;
+        transition: opacity 0.2s;
+        z-index: 10;
+    }
+    .preview-img-container:hover .delete-img-btn {
+        opacity: 1;
+    }
+</style>
+
+<!-- Update Preview Modal -->
+<div class="modal fade" id="updatePreviewModal" tabindex="-1" aria-labelledby="updatePreviewModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="updatePreviewModalLabel">数据库更新预览</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="updatePreviewSpinner" class="text-center">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">正在加载预览...</span>
+                    </div>
+                    <p class="mt-2">正在扫描待处理文件...</p>
+                </div>
+                <div id="updatePreviewContent" class="d-none">
+                    <!-- Section for updates -->
+                    <div id="updatesSection">
+                        <h4><i class="bi bi-person-plus-fill text-primary"></i> 补充样本 (data/new)</h4>
+                        <p class="text-muted">以下角色的样本图片将被提取特征并添加到数据库。处理后，源文件夹将被清空。</p>
+                        <div id="updateItemsContainer" class="list-group">
+                            <!-- Items will be injected here -->
+                        </div>
+                        <div id="noUpdates" class="d-none text-center p-4 border rounded bg-light">
+                            <p class="mb-0 text-muted">没有在 <code>data/new</code> 目录中找到待处理的样本。</p>
+                        </div>
+                    </div>
+                    
+                    <hr class="my-4">
+
+                    <!-- Section for additions -->
+                    <div id="additionsSection">
+                            <h4><i class="bi bi-person-badge text-success"></i> 新增角色</h4>
+                            <p class="text-muted">以下在 <code>data/new</code> 中找到、但尚未入库的新角色将被索引并添加到数据库。</p>
+                        <div id="additionItemsContainer" class="list-group">
+                            <!-- Items will be injected here -->
+                        </div>
+                            <div id="noAdditions" class="d-none text-center p-4 border rounded bg-light">
+                            <p class="mb-0 text-muted">没有在 <code>data/new</code> 目录中找到未索引的新角色。</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer justify-content-between">
+                    <small id="nothingToDo" class="text-muted d-none">没有需要处理的任务。</small>
+                    <div>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" id="processUpdatesBtn" disabled><i class="bi bi-arrow-repeat"></i> 处理补充样本</button>
+                    <button type="button" class="btn btn-success" id="processAdditionsBtn" disabled><i class="bi bi-plus-circle"></i> 处理新增角色</button>
+                    </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Log Display Modal (also part of the component) -->
+<div class="modal fade" id="logModal" tabindex="-1" aria-labelledby="logModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="logModalLabel">数据库更新日志</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <pre id="logContent" style="white-space: pre-wrap; word-wrap: break-word; max-height: 60vh; overflow-y: auto; background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: .25rem; padding: 1rem;"></pre>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">关闭并刷新页面</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Check if the trigger button exists on the page
+    const updateDbBtn = document.getElementById('updateDbBtn');
+    if (!updateDbBtn) {
+        return; // Don't run any of this code if the trigger button isn't present
+    }
+
+    const logModalEl = document.getElementById('logModal');
+    const updatePreviewModalEl = document.getElementById('updatePreviewModal');
+    
+    if (!logModalEl || !updatePreviewModalEl) {
+        console.error("Required modals for DB update preview are missing from the DOM.");
+        return;
+    }
+
+    const logModal = new bootstrap.Modal(logModalEl);
+    const updatePreviewModal = new bootstrap.Modal(updatePreviewModalEl);
+    const logModalLabel = document.getElementById('logModalLabel');
+    const logContent = document.getElementById('logContent');
+
+    updateDbBtn.addEventListener('click', async () => {
+        const spinner = document.getElementById('updatePreviewSpinner');
+        const content = document.getElementById('updatePreviewContent');
+        const updatesContainer = document.getElementById('updateItemsContainer');
+        const additionsContainer = document.getElementById('additionItemsContainer');
+        const noUpdates = document.getElementById('noUpdates');
+        const noAdditions = document.getElementById('noAdditions');
+        const processUpdatesBtn = document.getElementById('processUpdatesBtn');
+        const processAdditionsBtn = document.getElementById('processAdditionsBtn');
+        const nothingToDo = document.getElementById('nothingToDo');
+
+        // Reset state
+        spinner.classList.remove('d-none');
+        content.classList.add('d-none');
+        updatesContainer.innerHTML = '';
+        additionsContainer.innerHTML = '';
+        noUpdates.classList.add('d-none');
+        noAdditions.classList.add('d-none');
+        nothingToDo.classList.add('d-none');
+        processUpdatesBtn.disabled = true;
+        processAdditionsBtn.disabled = true;
+
+        updatePreviewModal.show();
+
+        try {
+            const res = await fetch('/api/admin/preview_database_changes');
+            const data = await res.json();
+
+            const renderAnimeGroups = (groupedData) => {
+                const sortedAnimeNames = Object.keys(groupedData).sort((a, b) => {
+                    if (a === '未知作品' || a === '需要修复元数据') return 1;
+                    if (b === '未知作品' || b === '需要修复元数据') return -1;
+                    return a.localeCompare(b);
+                });
+
+                if (sortedAnimeNames.length === 0) return '';
+                
+                return sortedAnimeNames.map(animeName => {
+                    const items = groupedData[animeName];
+                    const itemHtml = items.map(item => {
+                        const initialVisibleCount = 12;
+                        
+                        const hasMoreNew = item.previews.length > initialVisibleCount;
+                        const newPreviewsHtml = item.previews.map(preview => `
+                            <div class="preview-img-container">
+                                <img src="data:image/jpeg;base64,${preview.b64}" class="preview-thumb">
+                                <button class="delete-img-btn" data-char-id="${item.id}" data-filename="${preview.filename}" title="删除这张图片">
+                                    <i class="bi bi-x-lg"></i>
+                                </button>
+                            </div>
+                        `).join('');
+
+                        const isUpdate = item.existing_previews && item.existing_previews.length > 0;
+                        let existingPreviewsHtml = '';
+                        let hasMoreExisting = false;
+                        let totalExistingCount = 0;
+                        if (isUpdate) {
+                            totalExistingCount = item.existing_previews.length;
+                            hasMoreExisting = totalExistingCount > initialVisibleCount;
+                            existingPreviewsHtml = item.existing_previews.map(preview => `
+                                <div class="preview-img-container">
+                                    <img src="data:image/jpeg;base64,${preview.b64}" class="preview-thumb" title="${preview.filename}">
+                                </div>
+                            `).join('');
+                        }
+
+                        const newImagesContainer = `
+                            <div class="${isUpdate ? 'col-md' : 'col-12'}">
+                                ${isUpdate ? '<h6 class="small text-muted text-center mb-2">待补充的新样本</h6>' : ''}
+                                <div class="d-flex gap-2 flex-wrap preview-wrapper ${hasMoreNew ? 'collapsed' : ''}">
+                                    ${newPreviewsHtml}
+                                </div>
+                                ${hasMoreNew ? `
+                                <button class="btn btn-sm btn-link p-0 mt-1 text-decoration-none show-more-btn">
+                                    <i class="bi bi-chevron-down"></i>
+                                    显示其余 ${item.previews.length - initialVisibleCount} 张
+                                </button>
+                                ` : ''}
+                            </div>`;
+                        
+                        const arrowContainer = isUpdate ? `
+                            <div class="col-md-auto text-center align-self-center px-2 d-none d-md-block">
+                                <i class="bi bi-arrow-right-circle fs-3 text-success"></i>
+                                <div class="small text-muted mt-1" style="white-space: nowrap;">补充至</div>
+                            </div>
+                        ` : '';
+
+                        const existingImagesContainer = isUpdate ? `
+                            <div class="col-md">
+                                <h6 class="small text-muted text-center mb-2">数据库中已有样本 (共 ${totalExistingCount} 张)</h6>
+                                <div class="d-flex gap-2 flex-wrap preview-wrapper ${hasMoreExisting ? 'collapsed' : ''}">
+                                    ${existingPreviewsHtml}
+                                </div>
+                                ${hasMoreExisting ? `
+                                <button class="btn btn-sm btn-link p-0 mt-1 text-decoration-none show-more-btn">
+                                    <i class="bi bi-chevron-down"></i>
+                                    显示其余 ${totalExistingCount - initialVisibleCount} 张
+                                </button>
+                                ` : ''}
+                            </div>
+                        ` : '';
+
+                        return `
+                        <div class="list-group-item" id="item-preview-${item.id.replace('/', '-') }">
+                            <div class="d-flex align-items-center mb-3">
+                                <div class="flex-grow-1">
+                                    <h5 class="mb-1">${item.name}</h5>
+                                    <p class="mb-0 small text-muted">ID: ${item.id}</p>
+                                </div>
+                                <small class="image-count-display text-muted me-3">${item.image_count} 张待处理</small>
+                                <div class="ms-auto align-self-start">
+                                    <button class="btn btn-sm btn-outline-danger delete-pending-btn" data-char-id="${item.id}" title="删除这个待处理的角色文件夹">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div class="row align-items-start gx-3">
+                                ${newImagesContainer}
+                                ${arrowContainer}
+                                ${existingImagesContainer}
+                            </div>
+                        </div>
+                        `;
+                    }).join('');
+
+                    return `
+                        <div class="anime-group mb-4">
+                            <h5 class="group-header">${animeName}</h5>
+                            <div class="list-group">
+                                ${itemHtml}
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            };
+            
+            if (data.updates_grouped && Object.keys(data.updates_grouped).length > 0) {
+                processUpdatesBtn.disabled = false;
+                noUpdates.classList.add('d-none');
+                updatesContainer.innerHTML = renderAnimeGroups(data.updates_grouped);
+            } else {
+                noUpdates.classList.remove('d-none');
+                updatesContainer.innerHTML = '';
+            }
+
+            if (data.additions_grouped && Object.keys(data.additions_grouped).length > 0) {
+                processAdditionsBtn.disabled = false;
+                noAdditions.classList.add('d-none');
+                additionsContainer.innerHTML = renderAnimeGroups(data.additions_grouped);
+            } else {
+                noAdditions.classList.remove('d-none');
+                additionsContainer.innerHTML = '';
+            }
+            
+            if (Object.keys(data.updates_grouped).length === 0 && Object.keys(data.additions_grouped).length === 0) {
+                nothingToDo.classList.remove('d-none');
+            }
+
+        } catch (err) {
+            updatesContainer.innerHTML = `<div class="alert alert-danger">加载预览失败: ${err.message}</div>`;
+        } finally {
+            spinner.classList.add('d-none');
+            content.classList.remove('d-none');
+        }
+    });
+
+    updatePreviewModalEl.addEventListener('click', function(event) {
+        const target = event.target;
+        
+        // Handle "Show More" button clicks
+        if (target.classList.contains('show-more-btn') || target.closest('.show-more-btn')) {
+            const btn = target.closest('.show-more-btn');
+            const wrapper = btn.previousElementSibling;
+            
+            if (wrapper.classList.contains('collapsed')) {
+                wrapper.classList.remove('collapsed');
+                btn.innerHTML = '<i class="bi bi-chevron-up"></i> 收起';
+            } else {
+                wrapper.classList.add('collapsed');
+                const initialVisibleCount = 12;
+                const totalCount = wrapper.querySelectorAll('.preview-thumb').length;
+                btn.innerHTML = `<i class="bi bi-chevron-down"></i> 显示其余 ${totalCount - initialVisibleCount} 张`;
+            }
+        }
+        
+        // Handle "Delete Image" button clicks
+        if (target.classList.contains('delete-img-btn') || target.closest('.delete-img-btn')) {
+            handleDeleteImageClick(target.closest('.delete-img-btn'));
+        }
+
+        // Handle "Delete Pending Character" button clicks
+        if (target.classList.contains('delete-pending-btn') || target.closest('.delete-pending-btn')) {
+             handleDeletePendingClick(target.closest('.delete-pending-btn'));
+        }
+    });
+    
+    async function handleDeleteImageClick(btn) {
+        const charId = btn.dataset.charId;
+        const filename = btn.dataset.filename;
+        const imgContainer = btn.parentElement;
+        const charItem = btn.closest('.list-group-item');
+
+        if (!confirm(`确定要从角色 ${charId} 中永久删除图片 "${filename}" 吗？`)) {
+            return;
+        }
+
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm" style="width: 0.75rem; height: 0.75rem;" role="status"></span>';
+
+        try {
+            const res = await fetch('/api/admin/pending_character_image', {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ character_id: charId, filenames: [filename] }) // Send as a list
+            });
+            const data = await res.json();
+
+            if (!res.ok || !data.success) {
+                throw new Error(data.message || '删除失败');
+            }
+            
+            showToast(`成功删除图片: ${filename}`, 'success');
+
+            imgContainer.remove();
+            
+            const countDisplay = charItem.querySelector('.image-count-display');
+            const newCount = parseInt(countDisplay.textContent) - 1;
+            countDisplay.textContent = `${newCount} 张待处理`;
+
+            if (charItem.querySelectorAll('.preview-img-container').length === 0) {
+                const listGroup = charItem.parentElement;
+                charItem.remove();
+                if (listGroup.children.length === 0) {
+                    listGroup.closest('.anime-group').remove();
+                }
+            }
+        } catch (err) {
+            showToast(`删除失败: ${err.message}`, 'danger');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-x-lg"></i>';
+        }
+    }
+
+    async function handleDeletePendingClick(btn) {
+        const charId = btn.dataset.charId;
+        const charName = btn.closest('.list-group-item').querySelector('h5').textContent.trim();
+
+        if (!confirm(`确定要删除待处理的角色 "${charName}" (ID: ${charId}) 吗？\n这个操作会删除服务器上对应的文件夹及其所有图片，且无法撤销。`)) {
+            return;
+        }
+
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span>';
+
+        try {
+            const res = await fetch('/api/admin/delete_pending_character', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ character_id: charId })
+            });
+            const data = await res.json();
+
+            if (!res.ok || !data.success) {
+                throw new Error(data.message || '删除失败');
+            }
+
+            showToast(`成功删除角色: ${charName}`, 'success');
+            
+            const itemElement = btn.closest('.list-group-item');
+            const listGroup = itemElement.parentElement;
+            itemElement.remove();
+
+            if (listGroup.children.length === 0) {
+                listGroup.closest('.anime-group').remove();
+            }
+
+            // Check if containers are empty and update UI
+            if (document.getElementById('updateItemsContainer').children.length === 0) {
+                document.getElementById('noUpdates').classList.remove('d-none');
+                document.getElementById('processUpdatesBtn').disabled = true;
+            }
+            if (document.getElementById('additionItemsContainer').children.length === 0) {
+                document.getElementById('noAdditions').classList.remove('d-none');
+                document.getElementById('processAdditionsBtn').disabled = true;
+            }
+            if (document.getElementById('updateItemsContainer').children.length === 0 && document.getElementById('additionItemsContainer').children.length === 0) {
+                document.getElementById('nothingToDo').classList.remove('d-none');
+            }
+        } catch (err) {
+            showToast(`删除失败: ${err.message}`, 'danger');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-trash"></i>';
+        }
+    }
+
+    async function handleProcessRequest(url, button, modalTitle) {
+        const originalBtnHtml = button.innerHTML;
+        button.disabled = true;
+        button.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> 处理中...`;
+
+        showToast(`${modalTitle}任务已开始...`, 'info');
+        updatePreviewModal.hide();
+
+        try {
+            const res = await fetch(url, { method: 'POST' });
+            const data = await res.json();
+            
+            logContent.textContent = data.log;
+
+            if (!res.ok || data.success === false) {
+                logModalLabel.textContent = `${modalTitle}失败`;
+                showToast(`${modalTitle}失败: ${(data.log || '未知错误').split('\\n').pop()}`, 'danger');
+            } else {
+                logModalLabel.textContent = `${modalTitle}成功`;
+                showToast(`${modalTitle}和热重载成功！`, 'success');
+            }
+            logModal.show();
+        } catch (err) {
+            showToast(`请求失败: ${err.message}`, 'danger');
+        } finally {
+            button.disabled = false;
+            button.innerHTML = originalBtnHtml;
+        }
+    }
+
+    document.getElementById('processUpdatesBtn').addEventListener('click', () => {
+        handleProcessRequest(
+            '/api/run_update_and_reload', 
+            document.getElementById('processUpdatesBtn'), 
+            '补充样本'
+        );
+    });
+
+    document.getElementById('processAdditionsBtn').addEventListener('click', () => {
+        handleProcessRequest(
+            '/api/admin/rename/add_new_characters', 
+            document.getElementById('processAdditionsBtn'), 
+            '新增角色'
+        );
+    });
+
+    logModalEl.addEventListener('hidden.bs.modal', () => {
+        location.reload();
+    });
+});
+</script> 
